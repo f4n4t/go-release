@@ -327,7 +327,7 @@ func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 		}
 	}
 
-	if !s.skipMediaInfo && slices.Contains(mediaInfoSections, info.Section) {
+	if !s.skipMediaInfo && slices.Contains(mediaInfoSections, info.Section) && len(info.MediaFiles) > 0 {
 		s.tryGenerateMediaInfo(info)
 	}
 
@@ -357,6 +357,8 @@ func (s *Service) tryGenerateMediaInfo(info *Info) {
 		mediaFile, _ = getRarForMediaInfo(info.Root)
 	} else if len(info.Episodes) > 1 {
 		mediaFile = info.Episodes[0].File
+	} else if slices.Contains([]Section{AudioMP3, AudioFLAC, AudioBooks}, info.Section) {
+		mediaFile = info.MediaFiles[0]
 	} else {
 		mediaFile = info.BiggestFile
 	}
