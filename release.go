@@ -51,7 +51,7 @@ var Regexes = struct {
 
 var (
 	// mediaInfoSections contains the sections for which mediainfo will be generated.
-	mediaInfoSections = []Section{TV, TVPack, Movies, AudioVideo, Sport}
+	mediaInfoSections = []Section{TV, TVPack, Movies, AudioVideo, Sport, AudioBooks, AudioFLAC, AudioMP3}
 
 	// ForbiddenExtensions holds all the forbidden extensions.
 	ForbiddenExtensions = []string{".nzb", ".par2", ".url", ".html", ".srr", ".srs"}
