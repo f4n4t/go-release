@@ -39,7 +39,7 @@ var Regexes = struct {
 	Archive, Media, IMDb, CleanTitle, Year, EpisodeSpecial, BadChars, MetaFolders, MetaFiles, Group *regexp.Regexp
 }{
 	Archive:     regexp.MustCompile(`(?i)\.(rar|r\d{2}|\d{3}|zip|xz|tar|gz)$`),
-	Media:       regexp.MustCompile(`(?i)\.(avi|mkv|mpe?g|wm[av]|vob|ogg|m2ts|divx|xvid|mp[34]|flac|jpe?g|gif|png|img|iso)$`),
+	Media:       regexp.MustCompile(`(?i)\.(avi|mkv|mpe?g|wm[av]|vob|m2ts|divx|xvid|mp[34]|flac|jpe?g|gif|png|img|iso|aac|m4a|ogg|opus|ra|alac|ape|wv|wav|aiff?|pcm|au|snd)$`),
 	IMDb:        regexp.MustCompile(`(?i)imdb.+/(tt\d+)`),
 	CleanTitle:  regexp.MustCompile(`(?i)[._-](2160p|1080p|720p|s\d+([ed]\d+)?|e\d+|german|complete|d[vl]|hdr|web(rip)?|internal|ac3d?|unrated|uncut|remastered|stream)[._-].+$`),
 	Year:        regexp.MustCompile(`[._ -](\d{4})[._ -]`),
@@ -58,6 +58,10 @@ var (
 
 	// PictureExtensions is a struct with known picture extensions.
 	PictureExtensions = []string{".jpg", ".jpeg", ".png", ".gif"}
+
+	// AudioExtensions is a struct with known audio extensions.
+	AudioExtensions = []string{".mp3", ".aac", ".m4a", ".ogg", ".opus", ".wma", ".ra", ".flac", ".alac", ".ape", ".wv",
+		".wav", ".aiff", ".aif", ".pcm", ".au", ".snd"}
 )
 
 // skipType defines a type used to represent various skipping behaviors for files or directories.
@@ -180,7 +184,7 @@ type Info struct {
 	// ImdbID is the parsed IMDB ID from the NFO file.
 	ImdbID int `json:"imdb_id"`
 	// MediaFiles is a slice with all the media files (files that matched the media pattern).
-	MediaFiles []*dtree.Node `json:"-"`
+	MediaFiles MediaFiles `json:"-"`
 	// MediaInfo is only generated if mediainfo is found in a path.
 	MediaInfo *MediaInfo `json:"-"`
 	// MediaInfoJSON contains the raw JSON output from mediainfo.
@@ -220,6 +224,27 @@ func (i *Info) GetPre() (*Pre, bool) {
 		return i.PreInfo, true
 	}
 	return nil, false
+}
+
+type MediaFiles []*dtree.Node
+
+func (mf MediaFiles) GetByExtensions(extensions ...string) []*dtree.Node {
+	if len(extensions) == 0 {
+		return nil
+	}
+
+	var mediaFiles []*dtree.Node
+
+	for _, f := range mf {
+		exists := slices.ContainsFunc(extensions, func(e string) bool {
+			return strings.EqualFold(e, f.Info.Extension)
+		})
+		if exists {
+			mediaFiles = append(mediaFiles, f)
+		}
+	}
+
+	return mediaFiles
 }
 
 // ForbiddenFile represents a forbidden file like empty files or not allowed extension.
@@ -358,7 +383,10 @@ func (s *Service) tryGenerateMediaInfo(info *Info) {
 	} else if len(info.Episodes) > 1 {
 		mediaFile = info.Episodes[0].File
 	} else if slices.Contains([]Section{AudioMP3, AudioFLAC, AudioBooks}, info.Section) {
-		mediaFile = info.MediaFiles[0]
+		files := info.MediaFiles.GetByExtensions(AudioExtensions...)
+		if len(files) > 0 {
+			mediaFile = files[0]
+		}
 	} else {
 		mediaFile = info.BiggestFile
 	}
