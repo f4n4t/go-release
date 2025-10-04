@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/rs/zerolog/log"
 	"golang.org/x/sys/unix"
 )
 
@@ -17,32 +16,27 @@ import (
 // Errors are logged, and false is returned on failure.
 func IsSSD(filePath string) bool {
 	if runtime.GOOS != "linux" {
-		log.Debug().Msg("isSSD is only supported on Linux")
 		return false
 	}
 
 	deviceID, err := getDeviceID(filePath)
 	if err != nil {
-		log.Debug().Err(err).Msg("Unable to get device ID")
 		return false
 	}
 
 	blockDevice, err := findBlockDevice(deviceID)
 	if err != nil {
-		log.Debug().Err(err).Msg("Unable to find block device")
 		return false
 	}
 
 	deviceName := resolveBlockDevice(blockDevice)
 	if deviceName == "" {
-		log.Debug().Msg("Could not resolve actual block device name")
 		return false
 	}
 
 	rotationalPath := fmt.Sprintf("/sys/block/%s/queue/rotational", deviceName)
 	rotationalData, err := os.ReadFile(rotationalPath)
 	if err != nil {
-		log.Debug().Err(err).Msg("Unable to read rotational file")
 		return false
 	}
 
@@ -60,8 +54,6 @@ func getDeviceID(filePath string) (uint64, error) {
 	if err = unix.Stat(absPath, fileStat); err != nil {
 		return 0, fmt.Errorf("stat file: %w", err)
 	}
-
-	log.Debug().Msgf("fileStat.Dev: %d", fileStat.Dev)
 
 	return fileStat.Dev, nil
 }
@@ -81,7 +73,6 @@ func findBlockDevice(deviceID uint64) (string, error) {
 			device, mountPoint := fields[0], fields[1]
 			if strings.HasPrefix(device, "/dev/") {
 				mountStat := new(unix.Stat_t)
-				log.Debug().Msgf("mountPoint: %s", mountPoint)
 				if err := unix.Stat(mountPoint, mountStat); err == nil && mountStat.Dev == deviceID {
 					return device, nil
 				}
@@ -100,7 +91,6 @@ func findBlockDevice(deviceID uint64) (string, error) {
 func resolveBlockDevice(device string) string {
 	resolvedDevice, err := filepath.EvalSymlinks(device)
 	if err != nil {
-		log.Debug().Err(err).Msgf("resolve symlink for device: %s", device)
 		return ""
 	}
 
@@ -113,7 +103,6 @@ func resolveBlockDevice(device string) string {
 	}
 
 	if _, err := os.Stat(filepath.Join("/sys/block", base)); errors.Is(err, os.ErrNotExist) {
-		log.Debug().Msgf("block device does not exist in /sys/block: %s", base)
 		return ""
 	}
 
