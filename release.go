@@ -286,6 +286,8 @@ type Episode struct {
 	File   *dtree.Node `json:"-"`
 }
 
+type Episodes []Episode
+
 // NFOFile contains a single nfo file with content and filename.
 type NFOFile struct {
 	Name    string
@@ -332,7 +334,7 @@ func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 	info.Section = s.ParseSection(info.Name, info.PreInfo)
 
 	// search for episode numbers
-	if info.Section == TVPack && len(info.Root.Children) > 1 {
+	if info.Section == TVPack || info.Section == TV {
 		info.Episodes = getEpisodes(info.MediaFiles, info.Root)
 
 		if !s.skipPre && info.PreInfo == nil && len(info.Episodes) > 1 {
@@ -342,6 +344,10 @@ func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 					Msg("trying to search for pre information with sub folder name")
 				info.PreInfo = s.GetPre(firstChild.Info.Name)
 			}
+		}
+
+		if len(info.Episodes) < 2 {
+			info.Section = TV
 		}
 	}
 
@@ -827,12 +833,25 @@ func getEpisodes(mediaFiles []*dtree.Node, rootNode *dtree.Node) []Episode {
 		}
 	}
 
+	// filter duplicates
+	episodeMap := make(map[int]Episode)
+
+	for _, e := range episodes {
+		episodeMap[e.Number] = e
+	}
+
+	var filteredEpisodes []Episode
+
+	for _, v := range episodeMap {
+		filteredEpisodes = append(filteredEpisodes, v)
+	}
+
 	// sort episodes by number
-	sort.Slice(episodes, func(i, j int) bool {
-		return episodes[i].Number < episodes[j].Number
+	sort.Slice(filteredEpisodes, func(i, j int) bool {
+		return filteredEpisodes[i].Number < filteredEpisodes[j].Number
 	})
 
-	return episodes
+	return filteredEpisodes
 }
 
 var (

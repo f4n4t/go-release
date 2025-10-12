@@ -138,6 +138,103 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			desc: "tv release hidden as pack",
+			root: "TV.1967.S01.German.1080p.BluRay.x264-Group",
+			testFiles: map[string][]byte{
+				"TV.1967.S01.German.1080p.BluRay.x264-Group/s01e01-group.mkv": []byte("abcde"),
+				"TV.1967.S01.German.1080p.BluRay.x264-Group/meta.jpg":         []byte("ab"),
+			},
+			expected: release.Info{
+				Name:  "TV.1967.S01.German.1080p.BluRay.x264-Group",
+				Group: "Group",
+				Size:  5 + 2, // total file size
+				Extensions: map[string]int{
+					".mkv": 1,
+					".jpg": 1,
+				},
+				Language:      "german",
+				TagResolution: release.FHD,
+				BiggestFile: &dtree.Node{
+					Info: &dtree.FileInfo{
+						Name: "s01e01-group.mkv",
+						Size: 5,
+					},
+				},
+				ProductTitle: "TV",
+				ProductYear:  1967,
+				Section:      release.TV,
+				Episodes: []release.Episode{
+					{Number: 1, Name: "s01e01-group.mkv"},
+				},
+			},
+		},
+		{
+			desc: "tv retail release hidden as pack",
+			root: "TV.1967.S01.German.AC3.COMPLETE.DVD.MPEG2-GROUP",
+			testFiles: map[string][]byte{
+				"TV.1967.S01.German.AC3.COMPLETE.DVD.MPEG2-GROUP/VIDEOS_TS/VIDEO_TS.BUP": []byte("a"),
+				"TV.1967.S01.German.AC3.COMPLETE.DVD.MPEG2-GROUP/VIDEOS_TS/VIDEO_TS.IFO": []byte("ab"),
+				"TV.1967.S01.German.AC3.COMPLETE.DVD.MPEG2-GROUP/VIDEOS_TS/VTS_01_0.BUP": []byte("abc"),
+				"TV.1967.S01.German.AC3.COMPLETE.DVD.MPEG2-GROUP/VIDEOS_TS/VTS_01_0.IFO": []byte("abcd"),
+				"TV.1967.S01.German.AC3.COMPLETE.DVD.MPEG2-GROUP/VIDEOS_TS/VTS_01_0.VOB": []byte("abcde"),
+			},
+			expected: release.Info{
+				Name:  "TV.1967.S01.German.AC3.COMPLETE.DVD.MPEG2-GROUP",
+				Group: "GROUP",
+				Size:  1 + 2 + 3 + 4 + 5, // total file size
+				Extensions: map[string]int{
+					".VOB": 1,
+					".BUP": 2,
+					".IFO": 2,
+				},
+				Language:      "german",
+				TagResolution: release.SD,
+				BiggestFile: &dtree.Node{
+					Info: &dtree.FileInfo{
+						Name: "VTS_01_0.VOB",
+						Size: 5,
+					},
+				},
+				ProductTitle: "TV",
+				ProductYear:  1967,
+				Section:      release.TV,
+				Episodes:     []release.Episode{},
+			},
+		},
+		{
+			desc: "tv pack retail release",
+			root: "TV.1967.S01.German.AC3.COMPLETE.DVD.MPEG2-GROUP",
+			testFiles: map[string][]byte{
+				"TV.1967.S01.German.AC3.COMPLETE.DVD.MPEG2-GROUP/TV.1967.S01D01.German.AC3.COMPLETE.DVD.MPEG2-GROUP/VIDEOS_TS/VTS_01_0.VOB": []byte("ab"),
+				"TV.1967.S01.German.AC3.COMPLETE.DVD.MPEG2-GROUP/TV.1967.S01D02.German.AC3.COMPLETE.DVD.MPEG2-GROUP/VIDEOS_TS/VTS_01_0.VOB": []byte("abc"),
+				"TV.1967.S01.German.AC3.COMPLETE.DVD.MPEG2-GROUP/TV.1967.S01D03.German.AC3.COMPLETE.DVD.MPEG2-GROUP/VIDEOS_TS/VTS_01_0.VOB": []byte("abcd"),
+			},
+			expected: release.Info{
+				Name:  "TV.1967.S01.German.AC3.COMPLETE.DVD.MPEG2-GROUP",
+				Group: "GROUP",
+				Size:  2 + 3 + 4, // total file size
+				Extensions: map[string]int{
+					".VOB": 3,
+				},
+				Language:      "german",
+				TagResolution: release.SD,
+				BiggestFile: &dtree.Node{
+					Info: &dtree.FileInfo{
+						Name: "VTS_01_0.VOB",
+						Size: 4,
+					},
+				},
+				ProductTitle: "TV",
+				ProductYear:  1967,
+				Section:      release.TVPack,
+				Episodes: []release.Episode{
+					{Number: 1, Name: "VTS_01_0.VOB"},
+					{Number: 2, Name: "VTS_01_0.VOB"},
+					{Number: 3, Name: "VTS_01_0.VOB"},
+				},
+			},
+		},
+		{
 			desc: "forbidden files",
 			root: "Forbidden.1967.German.1080p.BluRay.x264-Group",
 			testFiles: map[string][]byte{
