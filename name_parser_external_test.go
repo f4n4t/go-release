@@ -41,7 +41,7 @@ func TestParseSection(t *testing.T) {
 		{"TV - Show with Date", "Late.Night.2023.05.25.Harrison.Ford.1080p.WEB.h264-BAE", "", release.TV},
 		{"TV - Daily Show", "The.Daily.Show.2023.08.15.1080p.WEB.h264-WHOSNEXT", "", release.TV},
 		{"TV - Complete Bluray", "Westworld.S04D01.COMPLETE.BLURAY-BROADCAST", "", release.TV},
-		{"TV - Multi-language Pack", "Mr.Robot.S03.MULTi.COMPLETE.BLURAY-SharpHD", "", release.TV},
+		{"TV - Multi-language Pack", "Mr.Robot.S03.MULTi.COMPLETE.BLURAY-SharpHD", "", release.TVPack},
 
 		// TV Shows - Season packs and alternative formats
 		{"TV - Anime Season", "To.Your.Eternity.2021.S01.ANiME.German.AAC.1080p.WEBRiP.HEVC-DS7", "", release.TVPack},

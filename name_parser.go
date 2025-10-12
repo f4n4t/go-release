@@ -102,7 +102,7 @@ var sectionRegexes = struct {
 
 // videoRegexes holds patterns for identifying video content types
 var videoRegexes = struct {
-	xxx, imageSet, clips, dvd, pack, tvPack, noTvPack, mvid, noSport *regexp.Regexp
+	xxx, imageSet, clips, dvd, pack, tvPack, mvid, noSport *regexp.Regexp
 }{
 	xxx:      regexp.MustCompile(`(?i)[._]xxx[._]?`),
 	imageSet: regexp.MustCompile(`(?i)[._]imagesets?[._-]?`),
@@ -110,7 +110,6 @@ var videoRegexes = struct {
 	dvd:      regexp.MustCompile(`(?i)[._]dvd[59r]?([._-]|$)`),
 	pack:     regexp.MustCompile(`(?i)[._]pack[._-]`),
 	tvPack:   regexp.MustCompile(`(?i)[._](s\d{2})[._]`),
-	noTvPack: regexp.MustCompile(`(?i)[._]complete.*(bluray|dvd)`),
 	mvid:     regexp.MustCompile(`(?i)-\d{4}-|[._-](mbluray|[ck]on[cz]ert)[._-]`),
 	noSport:  regexp.MustCompile(`(?i)[._-](do[ck]u(mentation)?|(s(taffel)?\d+)?e(pisode)?\d+)[._-]`),
 }
@@ -243,7 +242,7 @@ func (s *Service) parseVideo(name string, preSection string) Section {
 	}
 
 	// Check for TV pack content
-	if videoRegexes.tvPack.MatchString(name) && !videoRegexes.noTvPack.MatchString(name) {
+	if videoRegexes.tvPack.MatchString(name) {
 		return TVPack
 	}
 
