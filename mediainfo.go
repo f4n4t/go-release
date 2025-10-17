@@ -165,7 +165,7 @@ func (m *MediaInfo) GetAttachmentNames(extensions ...string) []string {
 			continue
 		}
 
-		for _, attachment := range strings.Split(track.Extra.Attachments, "/") {
+		for attachment := range strings.SplitSeq(track.Extra.Attachments, "/") {
 			fileName := strings.TrimSpace(attachment)
 
 			if shouldIncludeFile(fileName) {

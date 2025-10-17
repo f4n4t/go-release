@@ -171,7 +171,7 @@ type Info struct {
 	BiggestFile *dtree.Node `json:"-"`
 	// Episodes is a slice with all matched Episodes (only media files).
 	Episodes []Episode `json:"episodes"`
-	// Extensions is a map with all the found file extensions and their count.
+	// Extensions is a map with all the found file extensions and their count (all extensions are converted to lowercase).
 	Extensions map[string]int `json:"extensions"`
 	// BaseDir is the base directory path of the release.
 	BaseDir string `json:"base_dir"`
@@ -286,8 +286,6 @@ type Episode struct {
 	File   *dtree.Node `json:"-"`
 }
 
-type Episodes []Episode
-
 // NFOFile contains a single nfo file with content and filename.
 type NFOFile struct {
 	Name    string
@@ -358,7 +356,7 @@ func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 		}
 	}
 
-	if !s.skipMediaInfo && slices.Contains(mediaInfoSections, info.Section) && len(info.MediaFiles) > 0 {
+	if !s.skipMediaInfo && len(info.MediaFiles) > 0 {
 		s.tryGenerateMediaInfo(info)
 	}
 
@@ -388,7 +386,8 @@ func (s *Service) tryGenerateMediaInfo(info *Info) {
 		mediaFile, _ = getRarForMediaInfo(info.Root)
 	} else if len(info.Episodes) > 1 {
 		mediaFile = info.Episodes[0].File
-	} else if slices.Contains([]Section{AudioMP3, AudioFLAC, AudioBooks}, info.Section) {
+	} else if slices.Contains([]Section{AudioMP3, AudioFLAC, AudioBooks}, info.Section) ||
+		info.HasAnyExtension(AudioExtensions...) {
 		files := info.MediaFiles.GetByExtensions(AudioExtensions...)
 		if len(files) > 0 {
 			mediaFile = files[0]
@@ -475,10 +474,8 @@ func (s *Service) initReleaseInfo(root string) (*Info, error) {
 		return nil, fmt.Errorf("get file info: %w", err)
 	}
 
-	var (
-		rlsName      = filepath.Base(absRoot)
-		isSingleFile = !rootFileInfo.IsDir()
-	)
+	rlsName := filepath.Base(absRoot)
+	isSingleFile := !rootFileInfo.IsDir()
 
 	if isSingleFile {
 		// remove extension from name
@@ -581,7 +578,7 @@ func (s *Service) processPath(info *Info, path string, fileInfo *dtree.FileInfo,
 
 	if !fileInfo.IsDir {
 		info.Size += fileInfo.Size
-		info.Extensions[fileInfo.Extension] += 1
+		info.Extensions[strings.ToLower(fileInfo.Extension)] += 1
 
 		// empty file
 		if fileInfo.Size == 0 {
@@ -690,11 +687,7 @@ func (s *Service) checkFileExtension(info *Info, node *dtree.Node) error {
 // canSkip is a helper function to check if the file or folder can be ignored.
 func canSkip(path string, pattern []string, ignoreCase bool) (bool, error) {
 	for _, p := range pattern {
-		var (
-			name  string
-			match bool
-			err   error
-		)
+		var name string
 
 		if strings.Contains(p, string(filepath.Separator)) {
 			name = path
@@ -703,10 +696,11 @@ func canSkip(path string, pattern []string, ignoreCase bool) (bool, error) {
 		}
 
 		if ignoreCase {
-			match, err = filepath.Match(strings.ToLower(p), strings.ToLower(name))
-		} else {
-			match, err = filepath.Match(p, name)
+			p = strings.ToLower(p)
+			name = strings.ToLower(name)
 		}
+
+		match, err := filepath.Match(p, name)
 		if err != nil {
 			return false, fmt.Errorf("pattern %s: %w", p, err)
 		}
@@ -819,7 +813,8 @@ func getEpisodes(mediaFiles []*dtree.Node, rootNode *dtree.Node) []Episode {
 
 	for _, nodes := range [][]*dtree.Node{mediaFiles, rootNode.Children} {
 		for _, file := range nodes {
-			if slices.Contains(PictureExtensions, file.Info.Extension) {
+			if slices.Contains(PictureExtensions, file.Info.Extension) ||
+				slices.Contains(AudioExtensions, file.Info.Extension) {
 				continue
 			}
 
@@ -833,25 +828,14 @@ func getEpisodes(mediaFiles []*dtree.Node, rootNode *dtree.Node) []Episode {
 		}
 	}
 
-	// filter duplicates
-	episodeMap := make(map[int]Episode)
-
-	for _, e := range episodes {
-		episodeMap[e.Number] = e
-	}
-
-	var filteredEpisodes []Episode
-
-	for _, v := range episodeMap {
-		filteredEpisodes = append(filteredEpisodes, v)
-	}
+	episodes = removeDuplicateEpisodes(episodes)
 
 	// sort episodes by number
-	sort.Slice(filteredEpisodes, func(i, j int) bool {
-		return filteredEpisodes[i].Number < filteredEpisodes[j].Number
+	sort.Slice(episodes, func(i, j int) bool {
+		return episodes[i].Number < episodes[j].Number
 	})
 
-	return filteredEpisodes
+	return episodes
 }
 
 var (
@@ -900,4 +884,20 @@ func extractEpisodesFromFile(node *dtree.Node) []Episode {
 	})
 
 	return results
+}
+
+// removeDuplicateEpisodes removes every duplicate episode from the episode slice.
+func removeDuplicateEpisodes(episodes []Episode) []Episode {
+	var result []Episode
+
+	for _, episode := range episodes {
+		exists := slices.ContainsFunc(result, func(e Episode) bool {
+			return e.Number == episode.Number
+		})
+		if !exists {
+			result = append(result, episode)
+		}
+	}
+
+	return result
 }

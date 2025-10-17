@@ -183,9 +183,9 @@ func TestParse(t *testing.T) {
 				Group: "GROUP",
 				Size:  1 + 2 + 3 + 4 + 5, // total file size
 				Extensions: map[string]int{
-					".VOB": 1,
-					".BUP": 2,
-					".IFO": 2,
+					".vob": 1,
+					".bup": 2,
+					".ifo": 2,
 				},
 				Language:      "german",
 				TagResolution: release.SD,
@@ -214,7 +214,7 @@ func TestParse(t *testing.T) {
 				Group: "GROUP",
 				Size:  2 + 3 + 4, // total file size
 				Extensions: map[string]int{
-					".VOB": 3,
+					".vob": 3,
 				},
 				Language:      "german",
 				TagResolution: release.SD,
