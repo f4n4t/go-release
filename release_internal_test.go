@@ -558,3 +558,66 @@ func TestGetEpisodes(t *testing.T) {
 		})
 	}
 }
+
+func TestDetectSectionByExtensions(t *testing.T) {
+	t.Run("CheckIfIsIgnored", func(t *testing.T) {
+		extensions := map[string]int{
+			".mp3": 1,
+		}
+		testInfo := Info{
+			Section:    TV,
+			Extensions: extensions,
+		}
+		testInfo.checkForSectionByExtensions()
+		assert.Equal(t, TV, testInfo.Section)
+	})
+
+	t.Run("CheckIfIsIgnored", func(t *testing.T) {
+		extensions := map[string]int{
+			".mp3": 1,
+			".mkv": 1,
+		}
+		testInfo := Info{
+			Section:    Unknown,
+			Extensions: extensions,
+		}
+		testInfo.checkForSectionByExtensions()
+		assert.Equal(t, Unknown, testInfo.Section)
+	})
+
+	t.Run("TestForMP3", func(t *testing.T) {
+		extensions := map[string]int{
+			".mp3": 1,
+		}
+		testInfo := Info{
+			Section:    Unknown,
+			Extensions: extensions,
+		}
+		testInfo.checkForSectionByExtensions()
+		assert.Equal(t, AudioMP3, testInfo.Section)
+	})
+
+	t.Run("TestForFLAC", func(t *testing.T) {
+		extensions := map[string]int{
+			".flac": 1,
+		}
+		testInfo := Info{
+			Section:    Unknown,
+			Extensions: extensions,
+		}
+		testInfo.checkForSectionByExtensions()
+		assert.Equal(t, AudioFLAC, testInfo.Section)
+	})
+
+	t.Run("TestForEbook", func(t *testing.T) {
+		extensions := map[string]int{
+			".pdf": 1,
+		}
+		testInfo := Info{
+			Section:    Unknown,
+			Extensions: extensions,
+		}
+		testInfo.checkForSectionByExtensions()
+		assert.Equal(t, Ebooks, testInfo.Section)
+	})
+}

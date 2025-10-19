@@ -62,6 +62,12 @@ var (
 	// AudioExtensions is a struct with known audio extensions.
 	AudioExtensions = []string{".mp3", ".aac", ".m4a", ".ogg", ".opus", ".wma", ".ra", ".flac", ".alac", ".ape", ".wv",
 		".wav", ".aiff", ".aif", ".pcm", ".au", ".snd"}
+
+	// VideoExtensions is a struct with known video extensions.
+	VideoExtensions = []string{".mp4", ".mkv", ".mov", ".avi", ".wmv", ".flv", ".webm", ".m4v", ".m2ts"}
+
+	// EbookExtensions is a list of common ebook file extensions.
+	EbookExtensions = []string{".pdf", ".epub", ".mobi", ".azw3", ".djvu", ".fb2", ".cbz", ".cbr"}
 )
 
 // skipType defines a type used to represent various skipping behaviors for files or directories.
@@ -356,7 +362,11 @@ func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 		}
 	}
 
-	if !s.skipMediaInfo && len(info.MediaFiles) > 0 {
+	if info.Section == Unknown {
+		info.checkForSectionByExtensions()
+	}
+
+	if !s.skipMediaInfo && slices.Contains(mediaInfoSections, info.Section) {
 		s.tryGenerateMediaInfo(info)
 	}
 
@@ -382,17 +392,20 @@ func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 func (s *Service) tryGenerateMediaInfo(info *Info) {
 	var mediaFile *dtree.Node
 
-	if info.ArchiveCount > 1 {
+	switch {
+	case info.ArchiveCount > 1:
 		mediaFile, _ = getRarForMediaInfo(info.Root)
-	} else if len(info.Episodes) > 1 {
+
+	case len(info.Episodes) > 1:
 		mediaFile = info.Episodes[0].File
-	} else if slices.Contains([]Section{AudioMP3, AudioFLAC, AudioBooks}, info.Section) ||
-		info.HasAnyExtension(AudioExtensions...) {
-		files := info.MediaFiles.GetByExtensions(AudioExtensions...)
-		if len(files) > 0 {
+
+	case slices.Contains([]Section{AudioMP3, AudioFLAC, AudioBooks}, info.Section):
+		if files := info.MediaFiles.GetByExtensions(AudioExtensions...); len(files) > 0 {
 			mediaFile = files[0]
 		}
-	} else {
+	}
+
+	if mediaFile == nil {
 		mediaFile = info.BiggestFile
 	}
 
@@ -900,4 +913,25 @@ func removeDuplicateEpisodes(episodes []Episode) []Episode {
 	}
 
 	return result
+}
+
+func (i *Info) checkForSectionByExtensions() {
+	switch {
+	case i.Section != Unknown:
+		// ignore if section is already matched
+		return
+
+	case i.HasAnyExtension(VideoExtensions...):
+		// ignore if any video extension exists
+		return
+
+	case i.HasAnyExtension(".mp3"):
+		i.Section = AudioMP3
+
+	case i.HasAnyExtension(".flac"):
+		i.Section = AudioFLAC
+
+	case i.HasAnyExtension(EbookExtensions...):
+		i.Section = Ebooks
+	}
 }

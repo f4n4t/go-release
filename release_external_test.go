@@ -397,6 +397,56 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			desc: "mp3 release, detect with file extensions",
+			root: "Music.Release.2009-Group",
+			testFiles: map[string][]byte{
+				"Music.Release.2009-Group/01-my_song.mp3": []byte("this is a song\n"),
+			},
+			expected: release.Info{
+				Name:          "Music.Release.2009-Group",
+				Group:         "Group",
+				Size:          15,
+				TagResolution: release.SD,
+				Extensions: map[string]int{
+					".mp3": 1,
+				},
+				BiggestFile: &dtree.Node{
+					Info: &dtree.FileInfo{
+						Name: "01-my_song.mp3",
+						Size: 15,
+					},
+				},
+				ProductTitle: "Music Release",
+				ProductYear:  2009,
+				Section:      release.AudioMP3,
+			},
+		},
+		{
+			desc: "flac release, detect section with file extensions",
+			root: "Music.Release.2009-Group",
+			testFiles: map[string][]byte{
+				"Music.Release.2009-Group/01-my_song.flac": []byte("this is a song\n"),
+			},
+			expected: release.Info{
+				Name:          "Music.Release.2009-Group",
+				Group:         "Group",
+				Size:          15,
+				TagResolution: release.SD,
+				Extensions: map[string]int{
+					".flac": 1,
+				},
+				BiggestFile: &dtree.Node{
+					Info: &dtree.FileInfo{
+						Name: "01-my_song.flac",
+						Size: 15,
+					},
+				},
+				ProductTitle: "Music Release",
+				ProductYear:  2009,
+				Section:      release.AudioFLAC,
+			},
+		},
+		{
 			desc: "empty main folder",
 			root: "Empty.1976.German.1080p.BluRay.x264-Group",
 			testFiles: map[string][]byte{
