@@ -85,8 +85,8 @@ var languages = []string{"danish", "dutch", "finnish", "french", "german", "norw
 var sectionRegexes = struct {
 	musicSource, videoSource, videoCodec, oldVideo, xxxImageset, tv, ebook, game, gameSection, mobile, tutorial, macOS, linux *regexp.Regexp
 }{
-	musicSource: regexp.MustCompile(`(?i)[_-](web|sat|dvbs|cable|\d*cd[mrs]?|cdep|dvd(rip)?|mbluray|vinyl|vls|tape|sacd)[_-]`),
-	videoSource: regexp.MustCompile(`(?i)\.(atv|dtv|hdtv|dvd[59]|bdrip|uhdbdrip|bluray|hddvd|web|vhs|hd2dvd)(rip)?[.-]`),
+	musicSource: regexp.MustCompile(`(?i)[_-](web|sat|dvb[sct]|dtv|cable|\d*dvd[sa]?|dat|md|homemade|bootleg|\d*cd[mrs]?|cdep|dvd(rip)?|mbluray|vinyl|lp|vls|tape|sacd|dab|fm|radio)-.*(\d{4}|\d{2}-\d{2}-\d{2})`),
+	videoSource: regexp.MustCompile(`(?i)\.(atv|dtv|hdtv|dvd[59]|bd|uhdbd|bluray|hddvd|web|vhs|hd2dvd)(rip)?[.-]`),
 	videoCodec:  regexp.MustCompile(`(?i)[._-]([xh]26[45]|avc|hevc|vp9|divx|xvid|mpeg2|mp4|vc1|wmv)[._-]`),
 	oldVideo:    regexp.MustCompile(`(?i)[._-](hevc|avc|xvid|divx|vc1|[xh][._]?26[45]|m?dvd[59]?r?|mp4|mpeg2|m?bluray|hd2?dvd|720[ip]|1080[ip]|2160[ip]|xxx)([._-]|$)`),
 	xxxImageset: regexp.MustCompile(`(?i)xxx[._]imageset`),

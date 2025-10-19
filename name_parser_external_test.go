@@ -73,6 +73,7 @@ func TestParseSection(t *testing.T) {
 		{"Music - MP3 - Vinyl", "Scruscru-LTDWLBL010-(LTDWLBL010)-VINYL-2024-EMP", "", release.AudioMP3},
 		{"Music - MP3 - Tape", "Old_School_Hip_Hop_Mix-TAPE-2003-CMS", "", release.AudioMP3},
 		{"Music - MP3 - VLS", "Moodymann-Tribute-(KDJ48)-VLS-2016-USR", "", release.AudioMP3},
+		{"Music - MP3 - LP", "Deutsche_Trinkerjugend_-_Alle_Meine_Freunde-LP-DE-2014-RAiN", "", release.AudioMP3},
 
 		// Music Videos
 		{"AudioVideo - Standard Format", "2_Unlimited-The_Real_Thing-DVDRiP-x264-1994-ZViD_iNT", "", release.AudioVideo},
