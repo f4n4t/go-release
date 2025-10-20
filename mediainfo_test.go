@@ -122,3 +122,51 @@ func TestGetNearestResolution(t *testing.T) {
 		})
 	}
 }
+
+func TestGetImdbID(t *testing.T) {
+	tests := []struct {
+		desc      string
+		mediaInfo *MediaInfo
+		expected  int
+	}{
+		{
+			desc: "existing imdb id with tt prefix",
+			mediaInfo: &MediaInfo{
+				Media: Media{
+					Tracks: []MediaInfoTrack{
+						{Type: "General", Extra: MediaInfoTrackExtra{IMDB: "tt1337"}},
+					},
+				},
+			},
+			expected: 1337,
+		},
+		{
+			desc: "existing imdb id without prefix",
+			mediaInfo: &MediaInfo{
+				Media: Media{
+					Tracks: []MediaInfoTrack{
+						{Type: "General", Extra: MediaInfoTrackExtra{IMDB: "1337"}},
+					},
+				},
+			},
+			expected: 1337,
+		},
+		{
+			desc: "no id",
+			mediaInfo: &MediaInfo{
+				Media: Media{
+					Tracks: []MediaInfoTrack{
+						{Type: "General"},
+					},
+				},
+			},
+			expected: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			assert.Equal(t, tt.expected, tt.mediaInfo.GetImdbID())
+		})
+	}
+}

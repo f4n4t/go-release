@@ -136,6 +136,18 @@ type MediaInfoTrackExtra struct {
 	ComprMinimum            string `json:"compr_Minimum"`
 	ComprMaximum            string `json:"compr_Maximum"`
 	ComprCount              string `json:"compr_Count"`
+	// External Identifiers
+	// https://www.ietf.org/archive/id/draft-ietf-cellar-tags-17.html#name-external-identifiers
+	ISRC          string `json:"ISRC"`
+	ISBN          string `json:"ISBN"`
+	BARCODE       string `json:"BARCODE"`
+	CatelogNumber string `json:"CATALOG_NUMBER"`
+	LabelCode     string `json:"LABEL_CODE"`
+	LLCN          string `json:"LLCN"`
+	IMDB          string `json:"IMDB"`
+	TMDB          string `json:"TMDB"`
+	TVDB          string `json:"TVDB"`
+	TVDB2         string `json:"TVDB2"`
 }
 
 // GetAttachmentNames retrieves the names of attachments filtered by optional file extensions from the collection of tracks.
@@ -196,6 +208,26 @@ func (m *MediaInfo) HasAnyLanguage(languages ...string) bool {
 		}
 	}
 	return false
+}
+
+// GetImdbID checks for an existing imdb id in the extra track fields.
+func (m *MediaInfo) GetImdbID() int {
+	for _, track := range m.Media.Tracks {
+		if track.Type != string(General) {
+			continue
+		}
+
+		if track.Extra.IMDB == "" {
+			continue
+		}
+
+		imdbID, err := strconv.Atoi(strings.TrimPrefix(track.Extra.IMDB, "tt"))
+		if err == nil && imdbID > 0 {
+			return imdbID
+		}
+	}
+
+	return 0
 }
 
 func (m *MediaInfo) GetNearestResolution() Resolution {
