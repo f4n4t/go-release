@@ -894,6 +894,11 @@ func extractEpisodesFromFile(node *dtree.Node) []Episode {
 		})
 	}
 
+	// sort episodes by number
+	sort.Slice(results, func(i, j int) bool {
+		return results[i].Number < results[j].Number
+	})
+
 	return results
 }
 
