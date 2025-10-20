@@ -621,3 +621,23 @@ func TestDetectSectionByExtensions(t *testing.T) {
 		assert.Equal(t, Ebooks, testInfo.Section)
 	})
 }
+
+func TestRemoveDuplicateEpisodes(t *testing.T) {
+	input := []Episode{
+		{Number: 1},
+		{Number: 1},
+		{Number: 3},
+		{Number: 4},
+		{Number: 2},
+		{Number: 4},
+	}
+
+	expected := []Episode{
+		{Number: 1},
+		{Number: 3},
+		{Number: 4},
+		{Number: 2},
+	}
+
+	assert.Equal(t, expected, removeDuplicateEpisodes(input))
+}

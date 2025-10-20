@@ -371,6 +371,10 @@ func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 	}
 
 	if info.MediaInfo != nil {
+		if info.ImdbID == 0 {
+			info.ImdbID = info.MediaInfo.GetImdbID()
+		}
+
 		// get nfo from .mkv container, uses https://github.com/remko/go-mkvparse
 		if info.NFO == nil {
 			s.tryExtractNFO(info)
@@ -858,11 +862,9 @@ var (
 
 // extractEpisodesFromFile parses a Node's file name to extract episode numbers and creates corresponding Episode objects.
 func extractEpisodesFromFile(node *dtree.Node) []Episode {
-	var (
-		fileName   = node.Info.Name
-		results    = make([]Episode, 0)
-		episodeMap = make(map[int]struct{}) // To avoid duplicates
-	)
+	results := make([]Episode, 0)
+	fileName := node.Info.Name
+	episodeNumbers := make(map[int]struct{}) // To avoid duplicates
 
 	// Check for ranges first
 	for _, match := range episodeRangePattern.FindAllStringSubmatch(fileName, -1) {
@@ -871,7 +873,7 @@ func extractEpisodesFromFile(node *dtree.Node) []Episode {
 
 		if err1 == nil && err2 == nil && start <= end {
 			for i := start; i <= end; i++ {
-				episodeMap[i] = struct{}{}
+				episodeNumbers[i] = struct{}{}
 			}
 		}
 	}
@@ -879,11 +881,11 @@ func extractEpisodesFromFile(node *dtree.Node) []Episode {
 	// Check for individual episodes
 	for _, match := range episodePattern.FindAllStringSubmatch(fileName, -1) {
 		if episode, err := strconv.Atoi(match[1]); err == nil {
-			episodeMap[episode] = struct{}{}
+			episodeNumbers[episode] = struct{}{}
 		}
 	}
 
-	for episode := range episodeMap {
+	for episode := range episodeNumbers {
 		mediaFile := node.GetBiggest(nil)
 		results = append(results, Episode{
 			Number: episode,
@@ -892,27 +894,22 @@ func extractEpisodesFromFile(node *dtree.Node) []Episode {
 		})
 	}
 
-	sort.Slice(results, func(i, j int) bool {
-		return results[i].Number < results[j].Number
-	})
-
 	return results
 }
 
 // removeDuplicateEpisodes removes every duplicate episode from the episode slice.
 func removeDuplicateEpisodes(episodes []Episode) []Episode {
-	var result []Episode
+	episodeNumbers := make(map[int]struct{})
+	list := []Episode{}
 
 	for _, episode := range episodes {
-		exists := slices.ContainsFunc(result, func(e Episode) bool {
-			return e.Number == episode.Number
-		})
-		if !exists {
-			result = append(result, episode)
+		if _, ok := episodeNumbers[episode.Number]; !ok {
+			episodeNumbers[episode.Number] = struct{}{}
+			list = append(list, episode)
 		}
 	}
 
-	return result
+	return list
 }
 
 func (i *Info) checkForSectionByExtensions() {
