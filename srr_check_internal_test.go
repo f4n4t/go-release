@@ -1,6 +1,7 @@
 package release
 
 import (
+	"context"
 	"strconv"
 	"testing"
 
@@ -23,21 +24,25 @@ func TestRelease_VerifySingleSRR(t *testing.T) {
 		},
 	}
 
-	tests := []struct {
+	type test struct {
 		name      string
 		testFiles map[string][]byte
 		inputSRR  srrdb.Release
 		fastCheck bool
 		wantErr   error
-	}{
-		{
-			name: "valid input",
-			testFiles: map[string][]byte{
-				"test.mkv": []byte("test-content\n"),
-			},
-			inputSRR:  validSRR,
-			fastCheck: false,
+	}
+
+	validTest := test{
+		name: "valid input",
+		testFiles: map[string][]byte{
+			"test.mkv": []byte("test-content\n"),
 		},
+		inputSRR:  validSRR,
+		fastCheck: false,
+	}
+
+	tests := []test{
+		validTest,
 		{
 			name: "valid input (fast check)",
 			testFiles: map[string][]byte{
@@ -142,4 +147,23 @@ func TestRelease_VerifySingleSRR(t *testing.T) {
 			assert.ErrorIs(t, gotErr, tt.wantErr)
 		})
 	}
+
+	t.Run("CheckCancellation", func(t *testing.T) {
+		tempDir := t.TempDir()
+		setupTestDir(t, tempDir, validTest.testFiles)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		// check if cancellation works
+		releaseService := NewServiceBuilder().WithSkipPre(true).WithSkipMediaInfo(true).WithContext(ctx).Build()
+
+		rel, err := releaseService.Parse(tempDir)
+		require.NoError(t, err)
+
+		cancel()
+
+		gotErr := releaseService.verifySingleSRR(rel, validTest.inputSRR, &progress.NoOpProgressBar{}, false, false)
+		assert.ErrorIs(t, gotErr, context.Canceled)
+	})
 }
