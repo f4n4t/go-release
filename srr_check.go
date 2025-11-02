@@ -1,6 +1,7 @@
 package release
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strconv"
@@ -113,6 +114,9 @@ func (s *Service) verifySingleSRR(rel *Info, srr srrdb.Release, bar progress.Pro
 			WithHashThreads(s.hashThreads).Build()
 
 		if err := crcChecker.VerifyCRC32(); err != nil {
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				return err
+			}
 			return fmt.Errorf("%w: crc mismatch", ErrSrrValidationFailed)
 		}
 	}

@@ -1,6 +1,7 @@
 package release
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -118,6 +119,11 @@ func (s *Service) performSFVCheck(rel *Info, sfvPath string, showProgress bool) 
 
 		if err := crcChecker.VerifyCRC32(); err != nil {
 			passed = false
+
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+				s.log.Warn().Err(err).Msg("process interrupted")
+				return false, err
+			}
 			s.log.Error().Err(err).Msg("verification failed")
 			// continue to check every file
 		}
