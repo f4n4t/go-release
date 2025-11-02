@@ -1,6 +1,7 @@
 package release
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -324,7 +325,7 @@ func MediaInfoBinary() (string, error) {
 
 // GenerateMediaInfo calls tsmedia or mediainfo-rar to generate mediainfo output for the biggest file in release.
 // returns the JSON output and MediaInfo, potentially an error.
-func GenerateMediaInfo(mediaFile string) ([]byte, *MediaInfo, error) {
+func GenerateMediaInfo(ctx context.Context, mediaFile string) ([]byte, *MediaInfo, error) {
 	binaryPath, err := MediaInfoBinary()
 	if err != nil {
 		return nil, nil, err
@@ -346,7 +347,7 @@ func GenerateMediaInfo(mediaFile string) ([]byte, *MediaInfo, error) {
 		return nil, nil, fmt.Errorf("unknown mediainfo binary: %s", binaryPath)
 	}
 
-	jsonOutput, err := exec.Command(binaryPath, args...).Output()
+	jsonOutput, err := exec.CommandContext(ctx, binaryPath, args...).Output()
 	if err != nil {
 		return nil, nil, fmt.Errorf("error running mediainfo: %w", err)
 	}

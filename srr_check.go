@@ -109,6 +109,7 @@ func (s *Service) verifySingleSRR(rel *Info, srr srrdb.Release, bar progress.Pro
 		crcChecker := utils.NewCheckCRCBuilder(localFile.FullPath, uint32(srrCRC)).
 			WithParallelRead(useParallelRead).
 			WithProgressBar(bar).
+			WithContext(s.ctx).
 			WithHashThreads(s.hashThreads).Build()
 
 		if err := crcChecker.VerifyCRC32(); err != nil {

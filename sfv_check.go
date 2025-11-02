@@ -113,6 +113,7 @@ func (s *Service) performSFVCheck(rel *Info, sfvPath string, showProgress bool) 
 		crcChecker := utils.NewCheckCRCBuilder(localFile.FullPath, sfvFile.crc).
 			WithParallelRead(useParallelRead).
 			WithProgressBar(bar).
+			WithContext(s.ctx).
 			WithHashThreads(s.hashThreads).Build()
 
 		if err := crcChecker.VerifyCRC32(); err != nil {

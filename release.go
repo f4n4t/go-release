@@ -2,6 +2,7 @@ package release
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -90,6 +91,7 @@ type Service struct {
 	parallelFileRead ParallelFileRead
 	hashThreads      int
 	preInfo          *Pre
+	ctx              context.Context
 }
 
 // ServiceBuilder is a builder for the Service.
@@ -132,6 +134,12 @@ func (s *ServiceBuilder) WithPreInfo(preInfo *Pre) *ServiceBuilder {
 	return s
 }
 
+// WithContext sets the context for the service.
+func (s *ServiceBuilder) WithContext(ctx context.Context) *ServiceBuilder {
+	s.service.ctx = ctx
+	return s
+}
+
 // WithParallelFileRead sets the parallelFileRead flag to enable or disable parallel file read mode.
 // In this package it is used for the CRC32 calculation.
 func (s *ServiceBuilder) WithParallelFileRead(i int) *ServiceBuilder {
@@ -158,6 +166,9 @@ func (s *ServiceBuilder) WithHashThreads(i int) *ServiceBuilder {
 
 // Build creates a new Service from the builder.
 func (s *ServiceBuilder) Build() *Service {
+	if s.service.ctx == nil {
+		s.service.ctx = context.Background()
+	}
 	return &Service{
 		log:              s.service.log,
 		sportPatterns:    s.service.sportPatterns,
@@ -166,6 +177,7 @@ func (s *ServiceBuilder) Build() *Service {
 		parallelFileRead: s.service.parallelFileRead,
 		hashThreads:      s.service.hashThreads,
 		preInfo:          s.service.preInfo,
+		ctx:              s.service.ctx,
 	}
 }
 
@@ -428,7 +440,7 @@ func (s *Service) tryGenerateMediaInfo(info *Info) {
 
 	s.log.Debug().Str("mediaFile", mediaFile.FullPath).Msg("generating mediainfo...")
 
-	mediaInfoJSON, mediaInfo, err := GenerateMediaInfo(mediaFile.FullPath)
+	mediaInfoJSON, mediaInfo, err := GenerateMediaInfo(s.ctx, mediaFile.FullPath)
 	if err != nil {
 		s.log.Error().Err(err).Str("mediaFile", mediaFile.FullPath).Msg("error generating mediainfo")
 		return
