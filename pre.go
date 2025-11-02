@@ -33,7 +33,7 @@ func (s *Service) GetPre(name string) *Pre {
 		s.searchXREL,
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), searchTimeout)
+	ctx, cancel := context.WithTimeout(s.ctx, searchTimeout)
 	defer cancel()
 
 	resultChan := make(chan *Pre)
