@@ -277,8 +277,8 @@ type ForbiddenFiles []ForbiddenFile
 // Names returns only the base names of the forbidden files as a slice.
 func (ff *ForbiddenFiles) Names() []string {
 	forbiddenList := make([]string, len(*ff))
-	for _, f := range *ff {
-		forbiddenList = append(forbiddenList, f.Info.Name)
+	for i, f := range *ff {
+		forbiddenList[i] = f.Info.Name
 	}
 	return forbiddenList
 }
