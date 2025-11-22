@@ -3,6 +3,7 @@ package release
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -443,6 +444,11 @@ func (s *Service) tryGenerateMediaInfo(info *Info) {
 	mediaInfoJSON, mediaInfo, err := GenerateMediaInfo(s.ctx, mediaFile.FullPath)
 	if err != nil {
 		s.log.Error().Err(err).Str("mediaFile", mediaFile.FullPath).Msg("error generating mediainfo")
+		var unmarshalTypeError *json.UnmarshalTypeError
+		if errors.As(err, &unmarshalTypeError) {
+			// keep mediainfo json output
+			info.MediaInfoJSON = mediaInfoJSON
+		}
 		return
 	}
 

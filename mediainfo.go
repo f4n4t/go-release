@@ -355,7 +355,7 @@ func GenerateMediaInfo(ctx context.Context, mediaFile string) ([]byte, *MediaInf
 	mediaInfo := &MediaInfo{}
 
 	if err := json.Unmarshal(jsonOutput, &mediaInfo); err != nil {
-		return nil, nil, fmt.Errorf("unmarshal mediainfo: %w", err)
+		return jsonOutput, nil, fmt.Errorf("unmarshal mediainfo: %w", err)
 	}
 
 	return jsonOutput, mediaInfo, nil
