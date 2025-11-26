@@ -65,7 +65,7 @@ type MediaInfoTrack struct {
 	IsStreamable                   string              `json:"IsStreamable,omitempty"`
 	EncodedDate                    string              `json:"Encoded_Date,omitempty"`
 	EncodedApplication             string              `json:"Encoded_Application,omitempty"`
-	EncodedLibrary                 string              `json:"Encoded_Library,omitempty"`
+	EncodedLibrary                 StringOrStruct      `json:"Encoded_Library"`
 	StreamOrder                    string              `json:"StreamOrder,omitempty"`
 	ID                             string              `json:"ID,omitempty"`
 	FormatProfile                  string              `json:"Format_Profile,omitempty"`
@@ -149,6 +149,32 @@ type MediaInfoTrackExtra struct {
 	TMDB          string `json:"TMDB"`
 	TVDB          string `json:"TVDB"`
 	TVDB2         string `json:"TVDB2"`
+}
+
+type StringOrStruct struct {
+	Value    string `json:"#value"`
+	DataType string `json:"@dt"`
+}
+
+func (s *StringOrStruct) UnmarshalJSON(data []byte) error {
+	// case 1: string
+	var dataString string
+	if err := json.Unmarshal(data, &dataString); err == nil {
+		*s = StringOrStruct{
+			Value:    dataString,
+			DataType: "string",
+		}
+		return nil
+	}
+
+	// case 2: struct
+	var dataStruct StringOrStruct
+	if err := json.Unmarshal(data, &dataStruct); err == nil {
+		*s = dataStruct
+		return nil
+	}
+
+	return fmt.Errorf("StringOrStruct: value is neither string nor StringOrStruct: %s", string(data))
 }
 
 // GetAttachmentNames retrieves the names of attachments filtered by optional file extensions from the collection of tracks.
