@@ -167,10 +167,12 @@ func (s *StringOrStruct) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 
+	type stringOrStructAlias StringOrStruct
+
 	// case 2: struct
-	var dataStruct StringOrStruct
+	var dataStruct stringOrStructAlias
 	if err := json.Unmarshal(data, &dataStruct); err == nil {
-		*s = dataStruct
+		*s = StringOrStruct(dataStruct)
 		return nil
 	}
 
