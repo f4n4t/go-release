@@ -68,7 +68,7 @@ func TestParseSection(t *testing.T) {
 		{"Music - MP3 - Single CD (CDS)", "Common-The_6th_Sense_(Something_U_Feel)-Promo_CDS-2000-GCP_INT", "", release.AudioMP3},
 		{"Music - MP3 - Maxi CD (CDM)", "Common-The_6th_Sense_(Something_U_Feel)-Promo_CDM-2000-GCP_INT", "", release.AudioMP3},
 		{"Music - MP3 - Album single CD", "VA-Eurovision_Song_Contest_Basel_2025-CD-2025-C4", "", release.AudioMP3},
-		{"Music - MP3 - DVD", "Bonez_MC_und_Raf_Camora-Palmen_Aus_Plastik_Live_in_Stuttgart-DVD-DE-2016-NOiR", "", release.AudioMP3},
+		{"Music - MP3 - DVD", "Bonez_MC_und_Raf_Camora-Palmen_Aus_Plastik_Live_in_Stuttgart-DVD-DE-2016-NOiR", "", release.AudioVideo},
 		{"Music - MP3 - Album multiple CDs", "VA-Eurovision_Song_Contest_Basel_2025-2CD-2025-C4", "", release.AudioMP3},
 		{"Music - MP3 - Vinyl", "Scruscru-LTDWLBL010-(LTDWLBL010)-VINYL-2024-EMP", "", release.AudioMP3},
 		{"Music - MP3 - Tape", "Old_School_Hip_Hop_Mix-TAPE-2003-CMS", "", release.AudioMP3},
@@ -82,6 +82,7 @@ func TestParseSection(t *testing.T) {
 		{"AudioVideo - MBluRay Format", "Adele-Live_At_The_Royal_Albert_Hall-MBLURAY-x264-2011-FKKHD", "", release.AudioVideo},
 		{"AudioVideo - With Date", "Michael_Jackson-Thriller-MBLURAY-x264-1983-FKKFHD", "", release.AudioVideo},
 		{"AudioVideo - Without Codec", "KrawallBrueder.25.Jahre.Live.2022.GERMAN.COMPLETE.MBLURAY-FULLBRUTALiTY", "", release.AudioVideo},
+		{"AudioVideo - MDVDR", "Moonspell.Opus.Diabolicum.The.Orchestral.Live.Show.2025.PAL.DVD9.BONUS.MDVDR-400", "", release.AudioVideo},
 
 		// Audiobooks
 		{"Audiobook - Standard Format", "Stephen_King-The_Stand-AUDIOBOOK-WEB-2020-MOO", "", release.AudioBooks},

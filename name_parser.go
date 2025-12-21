@@ -83,12 +83,12 @@ var languages = []string{"danish", "dutch", "finnish", "french", "german", "norw
 
 // sectionRegexes holds patterns for identifying different section types
 var sectionRegexes = struct {
-	musicSource, videoSource, videoCodec, oldVideo, xxxImageset, tv, ebook, game, gameSection, mobile, tutorial, macOS, linux *regexp.Regexp
+	musicSource, videoSource, videoCodec, video, xxxImageset, tv, ebook, game, gameSection, mobile, tutorial, macOS, linux *regexp.Regexp
 }{
-	musicSource: regexp.MustCompile(`(?i)[_-](web|sat|dvb[sct]|dtv|cable|\d*dvd[sa]?|dat|md|homemade|bootleg|\d*cd[mrs]?|cdep|dvd(rip)?|mbluray|vinyl|lp|vls|tape|sacd|dab|fm|radio)-.*(\d{4}|\d{2}-\d{2}-\d{2})`),
+	musicSource: regexp.MustCompile(`(?i)[_-](web|sat|dvb[sct]|dtv|cable|\d*dvd[sa]?|dat|md|homemade|bootleg|\d*cd[mrs]?|cdep|dvd(rip)?|mbluray|mdvdr|vinyl|lp|vls|tape|sacd|dab|fm|radio)-.*(\d{4}|\d{2}-\d{2}-\d{2})`),
 	videoSource: regexp.MustCompile(`(?i)\.(atv|dtv|hdtv|dvd[59]|bd|uhdbd|bluray|hddvd|web|vhs|hd2dvd)(rip)?[.-]`),
 	videoCodec:  regexp.MustCompile(`(?i)[._-]([xh]26[45]|avc|hevc|vp9|divx|xvid|mpeg2|mp4|vc1|wmv)[._-]`),
-	oldVideo:    regexp.MustCompile(`(?i)[._-](hevc|avc|xvid|divx|vc1|[xh][._]?26[45]|m?dvd[59]?r?|mp4|mpeg2|m?bluray|hd2?dvd|720[ip]|1080[ip]|2160[ip]|xxx)([._-]|$)`),
+	video:       regexp.MustCompile(`(?i)[._-](hevc|avc|xvid|divx|vc1|[xh][._]?26[456]|m?dvd[59]?r?|mp4|mpeg2|m?bluray|mvid|hd2?dvd|720[ip]|1080[ip]|2160[ip]|xxx)([._-]|$)`),
 	xxxImageset: regexp.MustCompile(`(?i)xxx[._]imageset`),
 	tv:          regexp.MustCompile(`(?i)[._]s\d{2}[de]\d{2,}|s\d{2}|\d{4}[._-]\d{2}[._-]\d{2}|[._]\dx\d{2}[._]|[._]s\d{4}e\d{2}[._]|[._]e\d{2,}[._]|[._]d\d{2}[._]`),
 	ebook:       regexp.MustCompile(`(?i)[._-](ebook|epub|pdf|cbr|cbz)([._-]|$)`),
@@ -102,16 +102,17 @@ var sectionRegexes = struct {
 
 // videoRegexes holds patterns for identifying video content types
 var videoRegexes = struct {
-	xxx, imageSet, clips, dvd, pack, tvPack, mvid, noSport *regexp.Regexp
+	xxx, imageSet, clips, dvd, pack, tvPack, mvid, sport, noSport *regexp.Regexp
 }{
-	xxx:      regexp.MustCompile(`(?i)[._]xxx[._]?`),
+	xxx:      regexp.MustCompile(`(?i)[._]xxx[._-]?`),
 	imageSet: regexp.MustCompile(`(?i)[._]imagesets?[._-]?`),
 	clips:    regexp.MustCompile(`(?i)(\d{2}[._]){3}|[._]\d{4}[._]`),
 	dvd:      regexp.MustCompile(`(?i)[._]dvd[59r]?([._-]|$)`),
 	pack:     regexp.MustCompile(`(?i)[._]pack[._-]`),
-	tvPack:   regexp.MustCompile(`(?i)[._](s\d{2})[._]`),
-	mvid:     regexp.MustCompile(`(?i)-\d{4}-|[._-](mbluray|[ck]on[cz]ert)[._-]`),
-	noSport:  regexp.MustCompile(`(?i)[._-](do[ck]u(mentation)?|(s(taffel)?\d+)?e(pisode)?\d+)[._-]`),
+	tvPack:   regexp.MustCompile(`(?i)[._](s(taffel|eason)?\d{2})[._]`),
+	mvid:     regexp.MustCompile(`(?i)-\d{4}-|[._-](mbluray|mdvdr|mvid|[ck]on[cz]ert)[._-]`),
+	sport:    regexp.MustCompile(`(?i)[._]svid[._-]`),
+	noSport:  regexp.MustCompile(`(?i)[._]((do[ck]u(mentation)?|(s(taffel|eason)?\d+)?e(pisode)?\d+)|(s(taffel|eason)?\d+))[._-]`),
 }
 
 // audioRegexes holds patterns for identifying audio content types
@@ -165,7 +166,7 @@ func (s *Service) detectPrimarySection(name string, preSection string) Section {
 		return XXXImagesets
 	case sectionRegexes.musicSource.MatchString(name):
 		return parseAudio(name)
-	case sectionRegexes.oldVideo.MatchString(name):
+	case sectionRegexes.video.MatchString(name):
 		return s.parseVideo(name, preSection)
 	case sectionRegexes.ebook.MatchString(name):
 		return Ebooks
@@ -231,12 +232,12 @@ func (s *Service) parseVideo(name string, preSection string) Section {
 	}
 
 	// Check for sports content
-	if !videoRegexes.noSport.MatchString(name) && s.isSport(name) {
+	if s.isSport(name) {
 		return Sport
 	}
 
 	// Check for music video content
-	if slices.Contains([]string{"music", "mbluray", "mvid"}, preSection) ||
+	if slices.Contains([]string{"music", "mbluray", "mdvdr", "mvid"}, preSection) ||
 		videoRegexes.mvid.MatchString(name) {
 		return AudioVideo
 	}
@@ -262,7 +263,7 @@ func parseAudio(name string) Section {
 		return AudioBooks
 	case audioRegexes.flac.MatchString(name):
 		return AudioFLAC
-	case sectionRegexes.videoCodec.MatchString(name):
+	case sectionRegexes.videoCodec.MatchString(name) || sectionRegexes.video.MatchString(name):
 		return AudioVideo
 	default:
 		return AudioMP3
@@ -305,6 +306,14 @@ func parseApp(name string) Section {
 
 // isSport checks if the name contains any sport pattern
 func (s *Service) isSport(name string) bool {
+	if videoRegexes.sport.MatchString(name) {
+		return true
+	}
+
+	if videoRegexes.noSport.MatchString(name) {
+		return false
+	}
+
 	patterns := s.sportPatterns
 
 	if len(sportSections) > 0 {
