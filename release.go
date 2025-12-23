@@ -107,6 +107,7 @@ func NewServiceBuilder() *ServiceBuilder {
 	return sb
 }
 
+// WithLogger sets the logger for the service, if not set, a default logger that discards output is used.
 func (s *ServiceBuilder) WithLogger(logger *slog.Logger) *ServiceBuilder {
 	s.service.logger = logger
 	return s
