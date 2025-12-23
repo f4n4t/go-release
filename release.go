@@ -107,8 +107,8 @@ func NewServiceBuilder() *ServiceBuilder {
 	return sb
 }
 
-func (s *ServiceBuilder) WithLogger(log *slog.Logger) *ServiceBuilder {
-	s.service.logger = log
+func (s *ServiceBuilder) WithLogger(logger *slog.Logger) *ServiceBuilder {
+	s.service.logger = logger
 	return s
 }
 
