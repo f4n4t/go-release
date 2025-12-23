@@ -62,7 +62,7 @@ func (s *Service) CheckZip(rel *Info, extractNFO bool) error {
 	}
 
 	for dir, files := range zipFilesByDir {
-		s.log.Info().Str("folder", dir).Msg("checking zip files")
+		s.log().Info("checking zip files", "folder", dir)
 
 		result, err := processZipFiles(files)
 		if err != nil {
@@ -73,7 +73,7 @@ func (s *Service) CheckZip(rel *Info, extractNFO bool) error {
 			return err
 		}
 
-		s.log.Info().Str("folder", dir).Msg("zip check complete")
+		s.log().Info("zip check complete", "folder", dir)
 	}
 
 	if extractNFO && len(nfoFile.Content) > 0 {

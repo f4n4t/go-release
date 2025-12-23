@@ -11,20 +11,20 @@ import (
 func (s *Service) useParallelRead(releasePath string) (bool, error) {
 	switch s.parallelFileRead {
 	case ParallelFileReadDisabled:
-		s.log.Debug().Msg("disabling parallel method for reading files")
+		s.log().Debug("disabling parallel method for reading files")
 		return false, nil
 
 	case ParallelFileReadEnabled:
-		s.log.Debug().Msg("forcing parallel method for reading files")
+		s.log().Debug("forcing parallel method for reading files")
 		return true, nil
 
 	case ParallelFileReadAuto:
 		if utils.IsSSD(releasePath) {
-			s.log.Debug().Msg("detected ssd, using faster parallel method for reading files")
+			s.log().Debug("detected ssd, using faster parallel method for reading files")
 			return true, nil
 		}
 
-		s.log.Debug().Msg("could not detect ssd, using traditional method for reading files")
+		s.log().Debug("could not detect ssd, using traditional method for reading files")
 		return false, nil
 
 	default:

@@ -64,13 +64,13 @@ func (s *Service) GetPre(name string) *Pre {
 	select {
 	case pre, ok := <-resultChan:
 		if ok {
-			s.log.Debug().Str("site", pre.Site).Msg("found pre information")
+			s.log().Debug("found pre information", "site", pre.Site)
 			return pre
 		}
 		return nil
 	case <-ctx.Done():
 		if errors.Is(ctx.Err(), context.DeadlineExceeded) {
-			s.log.Debug().Msg("timeout while searching for pre information")
+			s.log().Debug("timeout while searching for pre information")
 		}
 		return nil
 	}
@@ -80,7 +80,7 @@ func (s *Service) GetPre(name string) *Pre {
 func (s *Service) searchPreNet(ctx context.Context, name string) (*Pre, error) {
 	preRes, err := predbnet.GetWithContext(ctx, name)
 	if err != nil {
-		s.log.Debug().Err(err).Str("site", "predb.net").Msg("")
+		s.log().Debug("search predb.net", "error", err, "site", "predb.net")
 		return nil, err
 	}
 
@@ -103,7 +103,7 @@ func (s *Service) searchPreNet(ctx context.Context, name string) (*Pre, error) {
 func (s *Service) searchXREL(ctx context.Context, name string) (*Pre, error) {
 	xrelRes, err := xrel.GetWithContext(ctx, name)
 	if err != nil {
-		s.log.Debug().Err(err).Str("site", "xrel.to").Msg("")
+		s.log().Debug("search xrel.to", "error", err, "site", "xrel.to")
 		return nil, err
 	}
 

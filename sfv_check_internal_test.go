@@ -2,7 +2,6 @@ package release
 
 import (
 	"fmt"
-	"github.com/rs/zerolog"
 	"hash/crc32"
 	"os"
 	"path/filepath"
@@ -143,8 +142,6 @@ func TestGetFilesFromSFV(t *testing.T) {
 		},
 	}
 
-	zerolog.SetGlobalLevel(zerolog.FatalLevel)
-
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -218,8 +215,6 @@ func TestRelease_PerformSFVCheck(t *testing.T) {
 		},
 		// test for empty sfv not possible, rel service doesn't allow empty files
 	}
-
-	zerolog.SetGlobalLevel(zerolog.FatalLevel)
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {

@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -16,8 +18,6 @@ import (
 	"strings"
 
 	"github.com/f4n4t/go-dtree"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 const (
@@ -85,7 +85,7 @@ const (
 )
 
 type Service struct {
-	log              zerolog.Logger
+	logger           *slog.Logger
 	sportPatterns    []string
 	skipPre          bool
 	skipMediaInfo    bool
@@ -103,8 +103,13 @@ type ServiceBuilder struct {
 // NewServiceBuilder creates a new ServiceBuilder.
 func NewServiceBuilder() *ServiceBuilder {
 	sb := &ServiceBuilder{}
-	sb.service.log = log.Logger.With().Str("module", Module).Logger()
+	sb.service.logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	return sb
+}
+
+func (s *ServiceBuilder) WithLogger(log *slog.Logger) *ServiceBuilder {
+	s.service.logger = log
+	return s
 }
 
 // WithSportPatterns sets the sport patterns.
@@ -171,7 +176,7 @@ func (s *ServiceBuilder) Build() *Service {
 		s.service.ctx = context.Background()
 	}
 	return &Service{
-		log:              s.service.log,
+		logger:           s.service.logger,
 		sportPatterns:    s.service.sportPatterns,
 		skipPre:          s.service.skipPre,
 		skipMediaInfo:    s.service.skipMediaInfo,
@@ -311,6 +316,14 @@ type NFOFile struct {
 	Content []byte
 }
 
+// log ensures the logger is initialized and returns the service's logger instance.
+func (s *Service) log() *slog.Logger {
+	if s.logger == nil {
+		s.logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
+	return s.logger
+}
+
 // Parse processes a directory structure, extracts information, and builds a tree representation of its contents.
 func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 	info, err := s.initReleaseInfo(root)
@@ -357,8 +370,7 @@ func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 		if !s.skipPre && info.PreInfo == nil && len(info.Episodes) > 1 {
 			firstChild := info.Root.Children[0]
 			if firstChild.Info.IsDir {
-				s.log.Debug().Str("name", firstChild.Info.Name).
-					Msg("trying to search for pre information with sub folder name")
+				s.log().Debug("trying to search for pre information with sub folder name", "name", firstChild.Info.Name)
 				info.PreInfo = s.GetPre(firstChild.Info.Name)
 			}
 		}
@@ -394,9 +406,7 @@ func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 		}
 	}
 
-	s.log.Debug().Str("Name", info.Name).
-		Any("Section", info.Section).
-		Msg("parsed release")
+	s.log().Debug("parsed release", "name", info.Name, "section", info.Section)
 
 	if len(info.ForbiddenFiles) > 0 {
 		return info, ErrForbiddenFiles
@@ -427,23 +437,22 @@ func (s *Service) tryGenerateMediaInfo(info *Info) {
 	}
 
 	if mediaFile == nil {
-		s.log.Debug().Msg("no media file found for mediainfo generation")
+		s.log().Debug("no media file found for mediainfo generation")
 		return
 	}
 
 	if mediaFile.Parent != nil && slices.Contains([]string{"STREAM", "VIDEO_TS"}, mediaFile.Parent.Info.Name) {
 		if mediaFile.Parent.Parent != nil {
-			s.log.Debug().Str("mediaFile", mediaFile.Parent.Parent.FullPath).
-				Msg("using parent folder for mediainfo")
+			s.log().Debug("using parent folder for mediainfo", "mediaFile", mediaFile.Parent.FullPath)
 			mediaFile = mediaFile.Parent.Parent
 		}
 	}
 
-	s.log.Debug().Str("mediaFile", mediaFile.FullPath).Msg("generating mediainfo...")
+	s.log().Debug("generating mediainfo...", "mediaFile", mediaFile.FullPath)
 
 	mediaInfoJSON, mediaInfo, err := GenerateMediaInfo(s.ctx, mediaFile.FullPath)
 	if err != nil {
-		s.log.Error().Err(err).Str("mediaFile", mediaFile.FullPath).Msg("error generating mediainfo")
+		s.log().Error("error generating mediainfo", "error", err, "mediaFile", mediaFile.FullPath)
 		var unmarshalTypeError *json.UnmarshalTypeError
 		if errors.As(err, &unmarshalTypeError) {
 			// keep mediainfo json output
@@ -470,13 +479,12 @@ func (s *Service) tryExtractNFO(info *Info) {
 
 	mkvNFO, err := ParseNfoAttachment(info.BiggestFile.FullPath)
 	if err != nil {
-		s.log.Error().Err(err).Str("mediaFile", info.BiggestFile.Info.Name).Msg("failed to parse nfo file")
+		s.log().Error("failed to parse nfo file", "error", err, "mediaFile", info.BiggestFile.Info.Name)
 		return
 	}
 
 	if len(mkvNFO.Content) > 0 {
-		s.log.Debug().Str("nfoName", mkvNFO.Name).
-			Str("mediaFile", info.BiggestFile.Info.Name).Msg("extracted nfo from mkv")
+		s.log().Debug("extracted nfo from mkv", "nfoName", mkvNFO.Name, "mediaFile", info.BiggestFile.Info.Name)
 		info.NFO = &mkvNFO
 	}
 }
@@ -486,7 +494,7 @@ func (s *Service) checkForEmptySubfolders(info *Info, node *dtree.Node) {
 	for _, child := range node.Children {
 		if child.Info.IsDir {
 			if len(child.Children) == 0 {
-				s.log.Error().Str("folder", child.FullPath).Err(ErrEmptyFolder).Msg("")
+				s.log().Error("check for empty sub folders", "folder", child.FullPath, "error", ErrEmptyFolder)
 				info.ForbiddenFiles.addFile(child.FullPath, child.Info, ErrEmptyFolder)
 			} else {
 				s.checkForEmptySubfolders(info, child)
@@ -601,7 +609,7 @@ func (s *Service) processPath(info *Info, path string, fileInfo *dtree.FileInfo,
 
 	if Regexes.BadChars.MatchString(fileInfo.Name) {
 		info.ForbiddenFiles.addFile(path, fileInfo, ErrForbiddenCharacters)
-		s.log.Error().Str("name", fileInfo.Name).Err(ErrForbiddenCharacters).Msg("")
+		s.log().Error("process path", "error", ErrForbiddenCharacters, "name", fileInfo.Name)
 	}
 
 	node := &dtree.Node{
@@ -618,7 +626,7 @@ func (s *Service) processPath(info *Info, path string, fileInfo *dtree.FileInfo,
 		// empty file
 		if fileInfo.Size == 0 {
 			info.ForbiddenFiles.addFile(path, fileInfo, ErrEmptyFile)
-			s.log.Error().Str("name", fileInfo.Name).Err(ErrEmptyFile).Msg("")
+			s.log().Error("process path", "error", ErrEmptyFile, "name", fileInfo.Name)
 		}
 
 		if err := s.checkFileExtension(info, node); err != nil {
@@ -659,11 +667,11 @@ func (s *Service) checkIgnoreList(info *Info, path string, fileInfo *dtree.FileI
 	}
 
 	if fileInfo.IsDir {
-		s.log.Info().Str("folder", fileInfo.Name).Msg("ignoring directory")
+		s.log().Info("ignoring directory", "folder", fileInfo.Name)
 		return skipDir, nil
 	}
 
-	s.log.Info().Str("file", fileInfo.Name).Msg("ignoring file")
+	s.log().Info("ignoring file", "file", fileInfo.Name)
 
 	return skipFile, nil
 }
@@ -677,7 +685,7 @@ func (s *Service) checkFileExtension(info *Info, node *dtree.Node) error {
 	switch {
 	case isForbidden(node.Info):
 		info.ForbiddenFiles.addFile(node.FullPath, node.Info, ErrForbiddenExtension)
-		s.log.Error().Str("name", node.Info.Name).Err(ErrForbiddenExtension).Msg("")
+		s.log().Error("check file extension", "error", ErrForbiddenExtension, "name", node.Info.Name)
 
 	case node.Info.Extension == ".sfv":
 		info.SfvCount++
@@ -686,7 +694,7 @@ func (s *Service) checkFileExtension(info *Info, node *dtree.Node) error {
 		if node.Info.Size == 0 || (info.ImdbID > 0 && info.NFO != nil) {
 			break
 		} else if node.Info.Size > maxNFOSize {
-			s.log.Warn().Msg("nfo is bigger than 10MB, skip parsing")
+			s.log().Warn("nfo is bigger than 10MB, skip parsing")
 			break
 		}
 

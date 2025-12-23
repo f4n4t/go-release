@@ -47,7 +47,7 @@ func (s *Service) CheckSRR(rel *Info, showProgress bool, fastCheck bool) error {
 
 	bar := progress.NewProgressBar(showProgress, totalSize, true)
 
-	s.log.Info().Str("totalSize", utils.Bytes(totalSize)).Msg("starting srr check")
+	s.log().Info("starting srr check", "totalSize", utils.Bytes(totalSize))
 
 	for _, srr := range srrdbReleases {
 		if err := s.verifySingleSRR(rel, srr, bar, useParallelRead, fastCheck); err != nil {
@@ -58,7 +58,7 @@ func (s *Service) CheckSRR(rel *Info, showProgress bool, fastCheck bool) error {
 
 	_ = bar.Finish()
 
-	s.log.Info().Str("dur", time.Since(startTime).String()).Msg("checked srr")
+	s.log().Info("checked srr", "dur", time.Since(startTime).String())
 
 	return nil
 }
@@ -72,7 +72,7 @@ func (s *Service) fetchSRRInformation(releaseNames []string) ([]srrdb.Release, e
 	for _, releaseName := range releaseNames {
 		srr, err := srrdb.GetInformation(releaseName)
 		if err != nil {
-			s.log.Error().Err(err).Str("release", releaseName).Msg("no srr record retrieved")
+			s.log().Error("no srr record retrieved", "error", err, "release", releaseName)
 			continue
 		}
 		srrdbReleases = append(srrdbReleases, srr)
@@ -121,7 +121,7 @@ func (s *Service) verifySingleSRR(rel *Info, srr srrdb.Release, bar progress.Pro
 		}
 	}
 
-	s.log.Debug().Str("srr", srr.Name).Msg("check passed")
+	s.log().Debug("check passed", "srr", srr.Name)
 
 	return nil
 }

@@ -58,7 +58,7 @@ func (s *Service) CheckSFV(rel *Info, showProgress bool) error {
 	success := true
 
 	for _, sfv := range rel.Root.GetFiles(".sfv") {
-		s.log.Info().Str("sfvFile", sfv.Info.Name).Msg("starting sfv check")
+		s.log().Info("starting sfv check", "sfvFile", sfv.Info.Name)
 
 		passed, err := s.performSFVCheck(rel, sfv.FullPath, showProgress)
 		if err != nil {
@@ -66,19 +66,19 @@ func (s *Service) CheckSFV(rel *Info, showProgress bool) error {
 		}
 
 		if !passed {
-			s.log.Error().Str("sfvFile", sfv.Info.Name).Msg("check failed")
+			s.log().Error("check failed", "sfvFile", sfv.Info.Name)
 			success = false
 			continue
 		}
 
-		s.log.Info().Str("sfvFile", sfv.Info.Name).Msg("check passed")
+		s.log().Info("check passed", "sfvFile", sfv.Info.Name)
 	}
 
 	if !success {
 		return ErrSfvValidationFailed
 	}
 
-	s.log.Info().Str("dur", time.Since(startTime).String()).Msg("sfv checks complete")
+	s.log().Info("sfv checks complete", "dur", time.Since(startTime).String())
 
 	return nil
 }
@@ -124,7 +124,7 @@ func (s *Service) performSFVCheck(rel *Info, sfvPath string, showProgress bool) 
 				return false, err
 			}
 
-			s.log.Error().Err(err).Msg("verification failed")
+			s.log().Error("verification failed", "error", err)
 			// continue to check every file
 		}
 	}

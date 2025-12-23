@@ -8,7 +8,6 @@ import (
 
 	"github.com/f4n4t/go-dtree"
 	"github.com/f4n4t/go-release"
-	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/require"
 
 	"github.com/stretchr/testify/assert"
@@ -469,9 +468,6 @@ func TestParse(t *testing.T) {
 			tempDir := t.TempDir()
 			setupTestDir(t, tempDir, tt.testFiles)
 			releaseDir := filepath.Join(tempDir, tt.root)
-
-			// disable logger
-			zerolog.SetGlobalLevel(zerolog.FatalLevel)
 
 			releaseService := release.NewServiceBuilder().WithSkipPre(true).WithSkipMediaInfo(true).Build()
 			gotRelease, gotErr := releaseService.Parse(releaseDir, tt.ignore...)
