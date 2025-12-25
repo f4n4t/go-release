@@ -62,8 +62,10 @@ var (
 	PictureExtensions = []string{".jpg", ".jpeg", ".png", ".gif"}
 
 	// AudioExtensions is a struct with known audio extensions.
-	AudioExtensions = []string{".mp3", ".aac", ".m4a", ".ogg", ".opus", ".wma", ".ra", ".flac", ".alac", ".ape", ".wv",
-		".wav", ".aiff", ".aif", ".pcm", ".au", ".snd"}
+	AudioExtensions = []string{
+		".mp3", ".aac", ".m4a", ".ogg", ".opus", ".wma", ".ra", ".flac", ".alac", ".ape", ".wv",
+		".wav", ".aiff", ".aif", ".pcm", ".au", ".snd",
+	}
 
 	// VideoExtensions is a struct with known video extensions.
 	VideoExtensions = []string{".mp4", ".mkv", ".mov", ".avi", ".wmv", ".flv", ".webm", ".m4v", ".m2ts"}
@@ -102,9 +104,7 @@ type ServiceBuilder struct {
 
 // NewServiceBuilder creates a new ServiceBuilder.
 func NewServiceBuilder() *ServiceBuilder {
-	sb := &ServiceBuilder{}
-	sb.service.logger = slog.New(slog.NewTextHandler(io.Discard, nil))
-	return sb
+	return &ServiceBuilder{}
 }
 
 // WithLogger sets the logger for the service, if not set, a default logger that discards output is used.
@@ -176,8 +176,11 @@ func (s *ServiceBuilder) Build() *Service {
 	if s.service.ctx == nil {
 		s.service.ctx = context.Background()
 	}
+	if s.service.logger == nil {
+		s.service.logger = slog.New(slog.NewTextHandler(io.Discard, nil))
+	}
 	return &Service{
-		logger:           s.service.logger,
+		logger:           s.service.logger.With("module", Module),
 		sportPatterns:    s.service.sportPatterns,
 		skipPre:          s.service.skipPre,
 		skipMediaInfo:    s.service.skipMediaInfo,
