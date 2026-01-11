@@ -3,7 +3,7 @@ package progress
 import (
 	"fmt"
 
-	"github.com/f4n4t/progressbar/v3"
+	"github.com/schollz/progressbar/v3"
 )
 
 // Progress is an interface to represent a progress tracking mechanism with methods to set, update, and finalize progress.
