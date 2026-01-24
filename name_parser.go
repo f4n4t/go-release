@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/moistari/rls"
 )
 
 // Resolution represents the video resolution quality
@@ -81,23 +83,33 @@ var sportSections []byte
 // languages is a slice with all the languages to check for in the release name
 var languages = []string{"danish", "dutch", "finnish", "french", "german", "norwegian", "spanish", "swedish", "hebrew"}
 
+// directPatternRegexes holds direct matching patterns for specific sections
+var directPatternRegexes = struct {
+	audioBook, ebook, sport, mvid, xxxImageset *regexp.Regexp
+}{
+	audioBook:   regexp.MustCompile(`(?i)[._-]audiobook([._-]|$)`),
+	ebook:       regexp.MustCompile(`(?i)[._-]ebook([._-]|$)`),
+	sport:       regexp.MustCompile(`(?i)[._-]svid([._-]|$)`),
+	mvid:        regexp.MustCompile(`(?i)[._-]mvid([._-]|$)`),
+	xxxImageset: regexp.MustCompile(`(?i)xxx[._]imageset`),
+}
+
 // sectionRegexes holds patterns for identifying different section types
 var sectionRegexes = struct {
-	musicSource, videoSource, videoCodec, video, xxxImageset, tv, ebook, game, gameSection, mobile, tutorial, macOS, linux *regexp.Regexp
+	musicSource, videoSource, videoCodec, video, tv, ebook, game, gameSection, mobile, tutorial, macOS, linux *regexp.Regexp
 }{
 	musicSource: regexp.MustCompile(`(?i)[_-](web|sat|dvb[sct]|dtv|cable|\d*dvd[sa]?|dat|md|homemade|bootleg|\d*cd[mrs]?|cdep|dvd(rip)?|mbluray|mdvdr|vinyl|lp|vls|tape|sacd|dab|fm|radio)-.*(\d{4}|\d{2}-\d{2}-\d{2})`),
 	videoSource: regexp.MustCompile(`(?i)\.(atv|dtv|hdtv|dvd[59]|bd|uhdbd|bluray|hddvd|web|vhs|hd2dvd)(rip)?[.-]`),
 	videoCodec:  regexp.MustCompile(`(?i)[._-]([xh]26[45]|avc|hevc|vp9|divx|xvid|mpeg2|mp4|vc1|wmv)[._-]`),
 	video:       regexp.MustCompile(`(?i)[._-](hevc|avc|xvid|divx|vc1|[xh][._]?26[456]|m?dvd[59]?r?|mp4|mpeg2|m?bluray|mvid|hd2?dvd|720[ip]|1080[ip]|2160[ip]|xxx)([._-]|$)`),
-	xxxImageset: regexp.MustCompile(`(?i)xxx[._]imageset`),
 	tv:          regexp.MustCompile(`(?i)[._]s\d{2}[de]\d{2,}|s\d{2}|\d{4}[._-]\d{2}[._-]\d{2}|[._]\dx\d{2}[._]|[._]s\d{4}e\d{2}[._]|[._]e\d{2,}[._]|[._]d\d{2}[._]`),
 	ebook:       regexp.MustCompile(`(?i)[._-](ebook|epub|pdf|cbr|cbz)([._-]|$)`),
 	game:        regexp.MustCompile(`(?i)[._-](ps[1-5]|xbox(one|360)?|nsw|wiiu?|linux)[._-]`),
 	gameSection: regexp.MustCompile(`(?i)^(games|ps\d|playstation|wii|xbox|x360|nsw|nintendo|nds)`),
 	mobile:      regexp.MustCompile(`(?i)[._-]android[._-]|apk$`),
 	tutorial:    regexp.MustCompile(`(?i)([._-]tutorials?|lectures?[._-])|^udemy[._-]`),
-	macOS:       regexp.MustCompile(`(?i)[._-]macosx?[._-]`),
-	linux:       regexp.MustCompile(`(?i)[._-]linux[._-]`),
+	macOS:       regexp.MustCompile(`(?i)(^|[._-])macosx?([._-]|$)`),
+	linux:       regexp.MustCompile(`(?i)(^|[._-])linux([._-]|$)`),
 }
 
 // videoRegexes holds patterns for identifying video content types
@@ -119,8 +131,8 @@ var videoRegexes = struct {
 var audioRegexes = struct {
 	flac, aBook *regexp.Regexp
 }{
-	flac:  regexp.MustCompile(`(?i)[_-]flac[_-]`),
-	aBook: regexp.MustCompile(`(?i)[_-](abook|audiobook|hoerbuch)`),
+	flac:  regexp.MustCompile(`(?i)[._-]flac[_-]`),
+	aBook: regexp.MustCompile(`(?i)[._-](abook|audiobook|hoerbuch)`),
 }
 
 // gameRegexes holds patterns for identifying game platforms
@@ -128,7 +140,7 @@ var gameRegexes = struct {
 	wii, playStation *regexp.Regexp
 }{
 	wii:         regexp.MustCompile(`(?i)wiiu?|nsw`),
-	playStation: regexp.MustCompile(`(?i)[._-](ps|playstation)[1-5][._-]`),
+	playStation: regexp.MustCompile(`(?i)(^|[._-])(ps|playstation)[1-5]([._-]|$)`),
 }
 
 // resRegexes holds patterns for identifying video resolutions
@@ -156,13 +168,26 @@ func (s *Service) ParseSection(name string, preInfo *Pre) Section {
 		section = s.detectFallbackSection(name)
 	}
 
+	// Try moistari/rls parsing as a last resort
+	if section == Unknown {
+		section = detectSectionFallback(name)
+	}
+
 	return section
 }
 
 // detectPrimarySection attempts to identify the section based on common patterns
 func (s *Service) detectPrimarySection(name string, preSection string) Section {
 	switch {
-	case sectionRegexes.xxxImageset.MatchString(name):
+	case directPatternRegexes.audioBook.MatchString(name):
+		return AudioBooks
+	case directPatternRegexes.ebook.MatchString(name):
+		return Ebooks
+	case directPatternRegexes.sport.MatchString(name):
+		return Sport
+	case directPatternRegexes.mvid.MatchString(name):
+		return AudioVideo
+	case directPatternRegexes.xxxImageset.MatchString(name):
 		return XXXImagesets
 	case sectionRegexes.musicSource.MatchString(name):
 		return parseAudio(name)
@@ -187,9 +212,6 @@ func (s *Service) detectSectionFromPreSection(name string, preSection string) Se
 	case slices.Contains([]string{"abooks", "abook", "mp3", "flac"}, preSection):
 		return parseAudio(name)
 	}
-	// slices.ContainsFunc([]string{"abook", "mp3", "flac"}, func(s string) bool {
-	// 	return strings.Contains(s, strings.ToLower(pre.Section))
-	// })
 
 	return Unknown
 }
@@ -371,4 +393,43 @@ func ParseLanguage(name string) string {
 	}
 
 	return ""
+}
+
+// detectSectionFallback attempts to detect the section of a release with the help of the external "rls" package.
+func detectSectionFallback(name string) Section {
+	section := Unknown
+
+	rel := rls.ParseString(name)
+
+	switch rel.Type {
+	case rls.App:
+		// ignore apps because they could also be games
+	case rls.Game:
+		section = parseGame(rel.Platform, false)
+	case rls.Music:
+		if slices.Contains(rel.Audio, "MP3") {
+			section = AudioMP3
+		} else if slices.Contains(rel.Audio, "FLAC") {
+			section = AudioFLAC
+		}
+	case rls.Audiobook:
+		section = AudioBooks
+	case rls.Book, rls.Comic:
+		section = Ebooks
+	case rls.Movie, rls.Episode, rls.Series:
+		if rel.Collection == "XXX" {
+			section = parseXXXContent(rel.String())
+		}
+
+		switch rel.Type {
+		case rls.Movie:
+			section = Movies
+		case rls.Episode:
+			section = TV
+		case rls.Series:
+			section = TVPack
+		}
+	}
+
+	return section
 }

@@ -14,10 +14,8 @@ import (
 	"github.com/f4n4t/go-release/pkg/utils"
 )
 
-var (
-	// sfvRegex is the compiled regex to extract the name and crc from the sfv files.
-	sfvRegex = regexp.MustCompile(`(?m)^\s*(?P<name>[^;\s]+)\s+(?P<crc>[a-fA-F0-9]{8})`)
-)
+// sfvRegex is the compiled regex to extract the name and crc from the sfv files.
+var sfvRegex = regexp.MustCompile(`(?m)^\s*(?P<name>[^;\s]+)\s+(?P<crc>[a-fA-F0-9]{8})`)
 
 var (
 	// ErrSfvValidationFailed indicates that an SFV validation process has failed.

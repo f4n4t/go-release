@@ -25,6 +25,9 @@ func TestParseSection(t *testing.T) {
 		{"Movie - 1080i Format", "Cold.Prey.Eiskalter.Tod.2006.German.DTS-HD.1080i.BluRay.MPEG-2.REMUX-LeetHD", "", release.Movies},
 		{"Movie - HEVC", "Star.Wars.The.Rise.Of.Skywalker.2019.German.HEVC.1080p.BluRay-QfG", "", release.Movies},
 		{"Movie - UHD.BluRay", "Godzilla.vs.Kong.2021.UHD.BluRay.2160p.DTS-HD.MA5.1.HEVC.REMUX-FraMeSToR", "", release.Movies},
+		{"Movie - dTV", "Das.Land.der.guten.Kinder.2013.German.MP3.dTVRiP.AVC-SPACK", "", release.Movies},
+		{"Movie - DVD", "Stephen.Kings.Desperation.2006.German.DL.MP2.COMPLETE.DVD.MPEG2-SPACK", "", release.Movies},
+		{"Movie - REMUX", "Blade.Runner.2049.2017.German.DL.DTSHD.2160p.DV.HDR.HDR10Plus.UHD.Bluray.HEVC.REMUX-SPACK", "", release.Movies},
 
 		// Movies - Edge cases
 		{"Movie - HDR Format", "The.Batman.2022.HDR.2160p.WEB.H265-EMPATHY", "", release.Movies},
@@ -52,12 +55,12 @@ func TestParseSection(t *testing.T) {
 
 		// Music - FLAC format
 		{"Music - FLAC - WEB", "H.E.A.T-Freedom_Rock-2023_Version-24BIT-WEB-FLAC-2023-TiMES", "", release.AudioFLAC},
-		{"Music - FLAC - SACD", "Johann_Sebastian_Bach-Complete_Organ_Works_played_on_Silbermann_Organs-SACD-FLAC-2012-TSiNT", "", release.AudioFLAC},
+		{"Music - FLAC - SACD", "Johann_Sebastian_Bach-Complete_Organ_Works_played_on_Silbermann_Organs-SACD-FLAC-2012-SPACK", "", release.AudioFLAC},
 		{"Music - FLAC - Multiple CDs", "Pink_Floyd-The_Dark_Side_Of_The_Moon-2CD-FLAC-1973-EMG", "", release.AudioFLAC},
 		{"Music - FLAC - Vinyl Rip", "Beatles-Abbey_Road-VINYL-FLAC-1969-CUSTODES", "", release.AudioFLAC},
 
 		// Music - missing source
-		{"Music - FLAC - Album", "Radiohead-In_Rainbows-FLAC-2007-EMG", "", release.Unknown},
+		{"Music - FLAC - Album", "Radiohead-In_Rainbows-FLAC-2007-EMG", "", release.AudioFLAC},
 
 		// Music - MP3 format with various sources
 		{"Music - MP3 - WEB", "Melonboy-You_Should_Be_Here-(SR059)-WEB-2025-BB", "", release.AudioMP3},
@@ -74,6 +77,8 @@ func TestParseSection(t *testing.T) {
 		{"Music - MP3 - Tape", "Old_School_Hip_Hop_Mix-TAPE-2003-CMS", "", release.AudioMP3},
 		{"Music - MP3 - VLS", "Moodymann-Tribute-(KDJ48)-VLS-2016-USR", "", release.AudioMP3},
 		{"Music - MP3 - LP", "Deutsche_Trinkerjugend_-_Alle_Meine_Freunde-LP-DE-2014-RAiN", "", release.AudioMP3},
+		{"Music - MP3 - CD", "VA.Sing.meinen.Song.Das.Tauschkonzert.Vol.12.2025.CD.MP3-SPACK", "", release.AudioMP3},
+		{"Music - MP3 - WEB", "Dropkick.Murphys.For.The.People.2025.WEB.16BiT.44KHZ.FLAC-SPACK", "", release.AudioFLAC},
 
 		// Music Videos
 		{"AudioVideo - Standard Format", "2_Unlimited-The_Real_Thing-DVDRiP-x264-1994-ZViD_iNT", "", release.AudioVideo},
@@ -83,12 +88,14 @@ func TestParseSection(t *testing.T) {
 		{"AudioVideo - With Date", "Michael_Jackson-Thriller-MBLURAY-x264-1983-FKKFHD", "", release.AudioVideo},
 		{"AudioVideo - Without Codec", "KrawallBrueder.25.Jahre.Live.2022.GERMAN.COMPLETE.MBLURAY-FULLBRUTALiTY", "", release.AudioVideo},
 		{"AudioVideo - MDVDR", "Moonspell.Opus.Diabolicum.The.Orchestral.Live.Show.2025.PAL.DVD9.BONUS.MDVDR-400", "", release.AudioVideo},
+		{"AudioVideo - REMUX", "Hans.Zimmer.Live.in.Prague.2017.2016.05.07.TrueHD.1080p.Bluray.AVC.REMUX.MViD-SPACK", "", release.AudioVideo},
 
 		// Audiobooks
 		{"Audiobook - Standard Format", "Stephen_King-The_Stand-AUDIOBOOK-WEB-2020-MOO", "", release.AudioBooks},
 		{"Audiobook - German", "Marc_Uwe_Kling-Die_Kaenguru_Chroniken-5CD-DE-AUDIOBOOK-PROPER-FLAC-2012-VOiCE", "", release.AudioBooks},
 		{"Audiobook - MP3 Format", "J_K_Rowling-Harry_Potter_And_The_Philosophers_Stone-UNABRIDGED-WEB-2015-plixid-ABOOK", "", release.AudioBooks},
 		{"Audiobook - Alternative Tag", "George_RR_Martin-A_Game_of_Thrones-HOERBUCH-CD-DE-2012-VOLDiES", "", release.AudioBooks},
+		{"Audiobook", "Friederike.von.Aderkas.Wutkraft.Energie.gewinnen.Beziehungen.beleben.Grenzen.setzen.2021.German.WEB.MP3.AUDiOBOOK-SPACK", "", release.AudioBooks},
 
 		// Games - Various platforms
 		{"Games - Windows", "Call.of.Duty.Modern.Warfare.III.PROPER-RAZOR1911", "games", release.GamesWindows},
@@ -134,6 +141,7 @@ func TestParseSection(t *testing.T) {
 		{"Ebook - Encyclopedia", "Encyclopedia.Britannica.2022.Edition.EPUB-KNOWLEDGE", "", release.Ebooks},
 		{"Ebook - Comic", "Amazing.Spider-Man.Volume.1.Issues.1-10.CBR-COMICS", "", release.Ebooks},
 		{"Ebook - Manga", "Attack.On.Titan.Volume.1-5.2013.EPUB-MANGA", "", release.Ebooks},
+		{"Ebook - EPub", "Carlo.Masala.Wenn.Russland.gewinnt.2025.German.Retail.EPUB.eBook-SPACK", "", release.Ebooks},
 
 		// Mobile
 		{"Mobile - Android App", "Sygic.GPS.Navigation.v22.0.6.ANDROiD.CELEBRATiON-rGPDA", "", release.Mobile},
