@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const (
@@ -375,9 +376,13 @@ func GenerateMediaInfo(ctx context.Context, mediaFile string) ([]byte, *MediaInf
 		return nil, nil, fmt.Errorf("unknown mediainfo binary: %s", binaryPath)
 	}
 
+	// Add timeout to context, because mediainfo can hang on some files
+	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	defer cancel()
+
 	jsonOutput, err := exec.CommandContext(ctx, binaryPath, args...).Output()
 	if err != nil {
-		return nil, nil, fmt.Errorf("error running mediainfo: %w", err)
+		return nil, nil, fmt.Errorf("mediainfo: %w", err)
 	}
 
 	mediaInfo := &MediaInfo{}
