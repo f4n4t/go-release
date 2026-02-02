@@ -48,7 +48,7 @@ func compareForbiddenFiles(t *testing.T, expected, got []release.ForbiddenFile) 
 }
 
 func compareEpisodes(t *testing.T, expected, got []release.Episode) {
-	assert.Equal(t, len(expected), len(got), "number of episodes mismatch")
+	require.Equal(t, len(expected), len(got), "number of episodes mismatch")
 	for i, e := range expected {
 		assert.Equal(t, e.Number, got[i].Number, "episode number mismatch")
 		assert.Equal(t, e.Name, got[i].Name, "episode name mismatch")
@@ -133,6 +133,41 @@ func TestParse(t *testing.T) {
 					{Number: 1, Name: "s01e01-group.mkv"},
 					{Number: 2, Name: "s01e02-group.mkv"},
 					{Number: 3, Name: "s01e03-group.mkv"},
+				},
+			},
+		},
+		{
+			desc: "tv pack release different naming",
+			root: "TVPack.1967.S01.German.1080p.BluRay.x264-Group",
+			testFiles: map[string][]byte{
+				"TVPack.1967.S01.German.1080p.BluRay.x264-Group/teil1-group.mkv": []byte("abcde"),
+				"TVPack.1967.S01.German.1080p.BluRay.x264-Group/teil2-group.mkv": []byte("abcd"),
+				"TVPack.1967.S01.German.1080p.BluRay.x264-Group/teil3-group.mkv": []byte("abc"),
+				"TVPack.1967.S01.German.1080p.BluRay.x264-Group/meta.jpg":        []byte("ab"),
+			},
+			expected: release.Info{
+				Name:  "TVPack.1967.S01.German.1080p.BluRay.x264-Group",
+				Group: "Group",
+				Size:  5 + 4 + 3 + 2, // total file size
+				Extensions: map[string]int{
+					".mkv": 3,
+					".jpg": 1,
+				},
+				Language:      "german",
+				TagResolution: release.FHD,
+				BiggestFile: &dtree.Node{
+					Info: &dtree.FileInfo{
+						Name: "teil1-group.mkv",
+						Size: 5,
+					},
+				},
+				ProductTitle: "TVPack",
+				ProductYear:  1967,
+				Section:      release.TVPack,
+				Episodes: []release.Episode{
+					{Number: 1, Name: "teil1-group.mkv"},
+					{Number: 2, Name: "teil2-group.mkv"},
+					{Number: 3, Name: "teil3-group.mkv"},
 				},
 			},
 		},

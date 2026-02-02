@@ -886,8 +886,8 @@ func getEpisodes(mediaFiles []*dtree.Node, rootNode *dtree.Node) []Episode {
 }
 
 var (
-	episodePattern      = regexp.MustCompile(`(?i)[ed](\d{1,3})`)
-	episodeRangePattern = regexp.MustCompile(`(?i)[ed](\d{1,3})-[ed](\d{1,3})`)
+	episodePattern      = regexp.MustCompile(`(?i)(?:[ed]|teil|part)(\d{1,3})`)
+	episodeRangePattern = regexp.MustCompile(`(?i)(?:[ed]|teil|part)(\d{1,3})-(?:[ed]|teil|part)(\d{1,3})`)
 )
 
 // extractEpisodesFromFile parses a Node's file name to extract episode numbers and creates corresponding Episode objects.
