@@ -886,8 +886,12 @@ func getEpisodes(mediaFiles []*dtree.Node, rootNode *dtree.Node) []Episode {
 }
 
 var (
-	episodePattern      = regexp.MustCompile(`(?i)(?:[ed]|teil|part)(\d{1,3})`)
-	episodeRangePattern = regexp.MustCompile(`(?i)(?:[ed]|teil|part)(\d{1,3})-(?:[ed]|teil|part)(\d{1,3})`)
+	// episodePattern matches individual episode numbers like e01, d02, teil3, part4, etc.
+	episodePattern = regexp.MustCompile(`(?i)(?:[ed]|teil|part)(\d+)`)
+	// episodeRangePattern matches episode ranges like e01-e10, part1-teil5, d01-d10, etc.
+	episodeRangePattern = regexp.MustCompile(`(?i)(?:[ed]|teil|part)(\d+)-(?:[ed]|teil|part)?(\d+)`)
+	// episodeStripNumbers holds resolution numbers that should be stripped from episode numbers.
+	episodeStripNumbers = []string{"2160", "1080", "720"}
 )
 
 // extractEpisodesFromFile parses a Node's file name to extract episode numbers and creates corresponding Episode objects.
@@ -898,8 +902,8 @@ func extractEpisodesFromFile(node *dtree.Node) []Episode {
 
 	// Check for ranges first
 	for _, match := range episodeRangePattern.FindAllStringSubmatch(fileName, -1) {
-		start, err1 := strconv.Atoi(match[1])
-		end, err2 := strconv.Atoi(match[2])
+		start, err1 := cleanEpisodeNumber(match[1])
+		end, err2 := cleanEpisodeNumber(match[2])
 
 		if err1 == nil && err2 == nil && start <= end {
 			for i := start; i <= end; i++ {
@@ -910,7 +914,7 @@ func extractEpisodesFromFile(node *dtree.Node) []Episode {
 
 	// Check for individual episodes
 	for _, match := range episodePattern.FindAllStringSubmatch(fileName, -1) {
-		if episode, err := strconv.Atoi(match[1]); err == nil {
+		if episode, err := cleanEpisodeNumber(match[1]); err == nil {
 			episodeNumbers[episode] = struct{}{}
 		}
 	}
@@ -930,6 +934,18 @@ func extractEpisodesFromFile(node *dtree.Node) []Episode {
 	})
 
 	return results
+}
+
+// cleanEpisodeNumber removes leftover resolution numbers from episode numbers (some groups mess up the naming).
+// e.g. for mistakes like teil31080p-group.mkv
+func cleanEpisodeNumber(number string) (int, error) {
+	for _, strip := range episodeStripNumbers {
+		if newNumber := strings.TrimSuffix(number, strip); newNumber != number && newNumber != "" {
+			number = newNumber
+			break
+		}
+	}
+	return strconv.Atoi(number)
 }
 
 // removeDuplicateEpisodes removes every duplicate episode from the episode slice.
