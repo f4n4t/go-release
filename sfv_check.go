@@ -1,6 +1,7 @@
 package release
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
@@ -15,7 +16,7 @@ import (
 )
 
 // sfvRegex is the compiled regex to extract the name and crc from the sfv files.
-var sfvRegex = regexp.MustCompile(`(?m)^\s*(?P<name>[^;\s]+)\s+(?P<crc>[a-fA-F0-9]{8})`)
+var sfvRegex = regexp.MustCompile(`^\s*(?P<name>[^;\s]+)\s+(?P<crc>[a-fA-F0-9]{8})`)
 
 var (
 	// ErrSfvValidationFailed indicates that an SFV validation process has failed.
@@ -132,25 +133,31 @@ func (s *Service) performSFVCheck(rel *Info, sfvPath string, showProgress bool) 
 
 // getFilesFromSFV parses an SFV file, extracts file information and CRC values, and returns the corresponding sfvFiles.
 func getFilesFromSFV(sfvPath string) (sfvFiles, error) {
-	content, err := os.ReadFile(sfvPath)
+	sfvFile, err := os.Open(sfvPath)
 	if err != nil {
-		return nil, fmt.Errorf("read sfv file: %w", err)
+		return nil, fmt.Errorf("open sfv file: %w", err)
 	}
 
-	matches := sfvRegex.FindAllStringSubmatch(string(content), -1)
-	if len(matches) == 0 {
-		return nil, fmt.Errorf("%w: no matches found in sfv file", ErrInvalidSfv)
-	}
-
-	files := make(sfvFiles, 0, len(matches))
+	var files sfvFiles
 	sfvDir := filepath.Dir(sfvPath)
+	scanner := bufio.NewScanner(sfvFile)
 
-	for _, match := range matches {
-		file, err := processSFVEntry(sfvDir, match[1], match[2])
-		if err != nil {
-			return nil, err
+	for scanner.Scan() {
+		if match := sfvRegex.FindStringSubmatch(scanner.Text()); match != nil {
+			file, err := processSFVEntry(sfvDir, match[1], match[2])
+			if err != nil {
+				return nil, err
+			}
+			files = append(files, file)
 		}
-		files = append(files, file)
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("scan sfv file: %w", err)
+	}
+
+	if len(files) == 0 {
+		return nil, fmt.Errorf("%w: no matches found in sfv file", ErrInvalidSfv)
 	}
 
 	return files, nil
