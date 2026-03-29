@@ -95,6 +95,16 @@ type Service struct {
 	hashThreads      int
 	preInfo          *Pre
 	ctx              context.Context
+	// forbiddenExtensions holds the extensions to check for forbidden files.
+	// When empty, forbidden extension checks are disabled.
+	forbiddenExtensions []string
+	// hasCustomForbiddenExtensions indicates whether the user provided custom extensions.
+	hasCustomForbiddenExtensions bool
+	// badCharsRegex checks for forbidden characters in file names.
+	// When nil, forbidden character checks are disabled.
+	badCharsRegex *regexp.Regexp
+	// hasCustomBadCharsRegex indicates whether the user provided a custom regex.
+	hasCustomBadCharsRegex bool
 }
 
 // ServiceBuilder is a builder for the Service.
@@ -171,6 +181,22 @@ func (s *ServiceBuilder) WithHashThreads(i int) *ServiceBuilder {
 	return s
 }
 
+// WithForbiddenExtensions sets the forbidden file extensions.
+// If called with an empty slice, forbidden extension checks are disabled.
+func (s *ServiceBuilder) WithForbiddenExtensions(extensions []string) *ServiceBuilder {
+	s.service.forbiddenExtensions = slices.Clone(extensions)
+	s.service.hasCustomForbiddenExtensions = true
+	return s
+}
+
+// WithBadCharsRegex sets the regex used to detect forbidden characters in file names.
+// If regex is nil, forbidden character checks are disabled.
+func (s *ServiceBuilder) WithBadCharsRegex(regex *regexp.Regexp) *ServiceBuilder {
+	s.service.badCharsRegex = regex
+	s.service.hasCustomBadCharsRegex = true
+	return s
+}
+
 // Build creates a new Service from the builder.
 func (s *ServiceBuilder) Build() *Service {
 	if s.service.ctx == nil {
@@ -188,6 +214,20 @@ func (s *ServiceBuilder) Build() *Service {
 		hashThreads:      s.service.hashThreads,
 		preInfo:          s.service.preInfo,
 		ctx:              s.service.ctx,
+		forbiddenExtensions: func() []string {
+			if s.service.hasCustomForbiddenExtensions {
+				return slices.Clone(s.service.forbiddenExtensions)
+			}
+			return slices.Clone(ForbiddenExtensions)
+		}(),
+		hasCustomForbiddenExtensions: s.service.hasCustomForbiddenExtensions,
+		badCharsRegex: func() *regexp.Regexp {
+			if s.service.hasCustomBadCharsRegex {
+				return s.service.badCharsRegex
+			}
+			return Regexes.BadChars
+		}(),
+		hasCustomBadCharsRegex: s.service.hasCustomBadCharsRegex,
 	}
 }
 
@@ -302,9 +342,12 @@ func (ff *ForbiddenFiles) addFile(fullPath string, fileInfo *dtree.FileInfo, fil
 	})
 }
 
-// isForbidden checks for forbidden extensions
-func isForbidden(fi *dtree.FileInfo) bool {
-	return slices.Contains(ForbiddenExtensions, fi.Extension)
+// isForbidden checks for forbidden extensions.
+func (s *Service) isForbidden(fi *dtree.FileInfo) bool {
+	if len(s.forbiddenExtensions) == 0 {
+		return false
+	}
+	return slices.Contains(s.forbiddenExtensions, fi.Extension)
 }
 
 // Episode represents a single episode in a series.
@@ -611,7 +654,7 @@ func (s *Service) processPath(info *Info, path string, fileInfo *dtree.FileInfo,
 		}
 	}
 
-	if Regexes.BadChars.MatchString(fileInfo.Name) {
+	if s.badCharsRegex != nil && s.badCharsRegex.MatchString(fileInfo.Name) {
 		info.ForbiddenFiles.addFile(path, fileInfo, ErrForbiddenCharacters)
 		s.log().Error("process path", "error", ErrForbiddenCharacters, "name", fileInfo.Name)
 	}
@@ -687,7 +730,7 @@ const maxNFOSize int64 = 10 * 1024 * 1024 // 10MB
 // For .nfo files, only the first one is stored, but later ones are still checked for missing IMDB IDs.
 func (s *Service) checkFileExtension(info *Info, node *dtree.Node) error {
 	switch {
-	case isForbidden(node.Info):
+	case s.isForbidden(node.Info):
 		info.ForbiddenFiles.addFile(node.FullPath, node.Info, ErrForbiddenExtension)
 		s.log().Error("check file extension", "error", ErrForbiddenExtension, "name", node.Info.Name)
 
@@ -892,6 +935,8 @@ var (
 	episodeRangePattern = regexp.MustCompile(`(?i)(?:[ed]|teil|part)(\d+)-(?:[ed]|teil|part)?(\d+)`)
 	// episodeStripNumbers holds resolution numbers that should be stripped from episode numbers.
 	episodeStripNumbers = []string{"2160", "1080", "720"}
+	// removePattern is used to remove misleading patterns that can be confused with episode numbers, such as dd51 or 1080p.
+	removePattern = regexp.MustCompile(`(?i)\b(dd\d+|\d{3,4}p)\b`)
 )
 
 // extractEpisodesFromFile parses a Node's file name to extract episode numbers and creates corresponding Episode objects.
@@ -900,8 +945,13 @@ func extractEpisodesFromFile(node *dtree.Node) []Episode {
 	fileName := node.Info.Name
 	episodeNumbers := make(map[int]struct{}) // To avoid duplicates
 
+	// Clean the filename by removing misleading patterns and normalizing separators
+	cleanedFilename := removePattern.ReplaceAllString(fileName, "")
+	cleanedFilename = regexp.MustCompile(`[-_.]+`).ReplaceAllString(cleanedFilename, "-")
+	cleanedFilename = strings.Trim(cleanedFilename, "-")
+
 	// Check for ranges first
-	for _, match := range episodeRangePattern.FindAllStringSubmatch(fileName, -1) {
+	for _, match := range episodeRangePattern.FindAllStringSubmatch(cleanedFilename, -1) {
 		start, err1 := cleanEpisodeNumber(match[1])
 		end, err2 := cleanEpisodeNumber(match[2])
 
@@ -913,7 +963,7 @@ func extractEpisodesFromFile(node *dtree.Node) []Episode {
 	}
 
 	// Check for individual episodes
-	for _, match := range episodePattern.FindAllStringSubmatch(fileName, -1) {
+	for _, match := range episodePattern.FindAllStringSubmatch(cleanedFilename, -1) {
 		if episode, err := cleanEpisodeNumber(match[1]); err == nil {
 			episodeNumbers[episode] = struct{}{}
 		}

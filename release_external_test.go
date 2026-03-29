@@ -207,6 +207,39 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			desc: "tv pack release with subfolders and weird file naming",
+			root: "TVPack.1967.S01.German.1080p.BluRay.x264-Group",
+			testFiles: map[string][]byte{
+				"TVPack.1967.S01.German.1080p.BluRay.x264-Group/TVPack.1967.S01E01.German.1080p.BluRay.x264-Group/group-tvpack-dd51-101.mkv": []byte("abcde"),
+				"TVPack.1967.S01.German.1080p.BluRay.x264-Group/TVPack.1967.S01E02.German.1080p.BluRay.x264-Group/group-tvpack-dd51-102.mkv": []byte("abcd"),
+				"TVPack.1967.S01.German.1080p.BluRay.x264-Group/TVPack.1967.S01E03.German.1080p.BluRay.x264-Group/group-tvpack-dd51-103.mkv": []byte("abc"),
+			},
+			expected: release.Info{
+				Name:  "TVPack.1967.S01.German.1080p.BluRay.x264-Group",
+				Group: "Group",
+				Size:  5 + 4 + 3, // total file size
+				Extensions: map[string]int{
+					".mkv": 3,
+				},
+				Language:      "german",
+				TagResolution: release.FHD,
+				BiggestFile: &dtree.Node{
+					Info: &dtree.FileInfo{
+						Name: "group-tvpack-dd51-101.mkv",
+						Size: 5,
+					},
+				},
+				ProductTitle: "TVPack",
+				ProductYear:  1967,
+				Section:      release.TVPack,
+				Episodes: []release.Episode{
+					{Number: 1, Name: "group-tvpack-dd51-101.mkv"},
+					{Number: 2, Name: "group-tvpack-dd51-102.mkv"},
+					{Number: 3, Name: "group-tvpack-dd51-103.mkv"},
+				},
+			},
+		},
+		{
 			desc: "tv release hidden as pack",
 			root: "TV.1967.S01.German.1080p.BluRay.x264-Group",
 			testFiles: map[string][]byte{

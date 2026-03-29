@@ -49,6 +49,7 @@ func TestParseSection(t *testing.T) {
 		// TV Shows - Season packs and alternative formats
 		{"TV - Anime Season", "To.Your.Eternity.2021.S01.ANiME.German.AAC.1080p.WEBRiP.HEVC-DS7", "", release.TVPack},
 		{"TV - Season Pack", "Game.of.Thrones.S08.1080p.BluRay.x264-ROVERS", "", release.TVPack},
+		{"TV - Season Pack", "Scandal.S06.German.DD51.DL.720p.AmazonHD.x264-TVS", "", release.TVPack},
 		{"TV - Season with Episodes", "Friends.S01E01-E24.1080p.BluRay.x264-GROUP", "", release.TV},
 		{"TV - Alternative Episode Format", "Succession.1x09.1080p.WEB.H264-GLHF", "", release.TV},
 		{"TV - Alternative Season Format", "The.Office.S05.D01.German.DL.1080p.BluRay.x264-RSG", "", release.TVPack},
