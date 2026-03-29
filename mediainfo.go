@@ -377,7 +377,7 @@ func GenerateMediaInfo(ctx context.Context, mediaFile string) ([]byte, *MediaInf
 	}
 
 	// Add timeout to context, because mediainfo can hang on some files
-	ctx, cancel := context.WithTimeout(ctx, 20*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 60*time.Second)
 	defer cancel()
 
 	jsonOutput, err := exec.CommandContext(ctx, binaryPath, args...).Output()
