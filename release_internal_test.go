@@ -215,7 +215,10 @@ func TestService_checkFileExtension(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.desc, func(t *testing.T) {
-			testService := &Service{}
+			testService := &Service{
+				forbiddenExtensions: ForbiddenExtensions,
+				badCharsRegex:       Regexes.BadChars,
+			}
 
 			// setup test file
 			tempDir := t.TempDir()
