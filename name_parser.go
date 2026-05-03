@@ -57,6 +57,16 @@ const (
 	Sport  Section = "sport"
 )
 
+// eBook Categories
+const (
+	Ebooks           Section = "ebooks"
+	EbooksNovel      Section = "novel"
+	EbooksNonFiction Section = "non-fiction"
+	EbooksComic      Section = "comic"
+	EbooksNewsPaper  Section = "newspaper"
+	EbooksMagazine   Section = "magazine"
+)
+
 // Adult content categories
 const (
 	XXX          Section = "xxx"
@@ -71,7 +81,6 @@ const (
 const (
 	Tutorials Section = "tutorials"
 	Mobile    Section = "mobile"
-	Ebooks    Section = "ebooks"
 	Unknown   Section = "unknown"
 )
 
@@ -142,6 +151,15 @@ var gameRegexes = struct {
 	playStation: regexp.MustCompile(`(?i)(^|[._-])(ps|playstation)[1-5]([._-]|$)`),
 }
 
+// ebookRegexes holds the patterns for identifying the ebook sub sections
+var ebookRegexes = struct {
+	comic, npaper, magazine *regexp.Regexp
+}{
+	comic:    regexp.MustCompile(`(?i)[._-](comic|manga)[._-]`),
+	npaper:   regexp.MustCompile(`(?i)[._-](zeitung|newspaper)[._-]`),
+	magazine: regexp.MustCompile(`(?i)[._-]magazine[._-]`),
+}
+
 // resRegexes holds patterns for identifying video resolutions
 var resRegexes = struct {
 	fhd, ultraHD *regexp.Regexp
@@ -181,7 +199,7 @@ func (s *Service) detectPrimarySection(name string, preSection string) Section {
 	case directPatternRegexes.audioBook.MatchString(name):
 		return AudioBooks
 	case directPatternRegexes.ebook.MatchString(name):
-		return Ebooks
+		return parseEbook(name)
 	case directPatternRegexes.sport.MatchString(name):
 		return Sport
 	case directPatternRegexes.mvid.MatchString(name):
@@ -354,6 +372,20 @@ func (s *Service) isSport(name string) bool {
 	}
 
 	return false
+}
+
+// parseEbook identifies the specific type of ebook
+func parseEbook(name string) Section {
+	switch {
+	case ebookRegexes.magazine.MatchString(name):
+		return EbooksMagazine
+	case ebookRegexes.npaper.MatchString(name):
+		return EbooksNewsPaper
+	case ebookRegexes.comic.MatchString(name):
+		return EbooksComic
+	default:
+		return Ebooks
+	}
 }
 
 // ParseResolution determines the video resolution from the release name

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -342,8 +343,8 @@ func (m *MediaInfo) GetNearestResolution() Resolution {
 }
 
 // MediaInfoBinary checks for the existence of tsmedia or mediainfo-rar in Path.
-func MediaInfoBinary() (string, error) {
-	for _, binary := range []string{"tsmedia", "mediainfo-rar", "mediainfo"} {
+func MediaInfoBinary(binaryNames []string) (string, error) {
+	for _, binary := range binaryNames {
 		if binaryPath, err := exec.LookPath(binary); err == nil && binaryPath != "" {
 			return binaryPath, nil
 		}
@@ -352,10 +353,19 @@ func MediaInfoBinary() (string, error) {
 	return "", errors.New("no binary for mediainfo generation found")
 }
 
+var dvdRegex = regexp.MustCompile(`(?i)complete.+dvd[59r].+\.(img|iso)`)
+
 // GenerateMediaInfo calls tsmedia or mediainfo-rar to generate mediainfo output for the biggest file in release.
 // returns the JSON output and MediaInfo, potentially an error.
 func GenerateMediaInfo(ctx context.Context, mediaFile string) ([]byte, *MediaInfo, error) {
-	binaryPath, err := MediaInfoBinary()
+	binaryNames := []string{"tsmedia", "mediainfo-rar", "mediainfo"}
+
+	if dvdRegex.MatchString(mediaFile) {
+		// prioritize mediainfo for dvds
+		binaryNames = []string{"mediainfo", "tsmedia", "mediainfo-rar"}
+	}
+
+	binaryPath, err := MediaInfoBinary(binaryNames)
 	if err != nil {
 		return nil, nil, err
 	}

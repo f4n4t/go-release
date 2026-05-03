@@ -644,3 +644,75 @@ func TestRemoveDuplicateEpisodes(t *testing.T) {
 
 	assert.Equal(t, expected, removeDuplicateEpisodes(input))
 }
+
+func TestParseEbookGenre(t *testing.T) {
+	tests := []struct {
+		name  string
+		input string
+		want  Section
+	}{
+		{
+			name: "non fiction #1",
+			input: `
+			genre > non-fiction
+			`,
+			want: EbooksNonFiction,
+		},
+		{
+			name: "non fiction #2",
+			input: `
+			genre > sachbuch asdasd
+			`,
+			want: EbooksNonFiction,
+		},
+		{
+			name: "newspaper #1",
+			input: `
+			genre > newspaper asdasd
+			`,
+			want: EbooksNewsPaper,
+		},
+		{
+			name: "newspaper #2",
+			input: `
+			genre > zeitung asdasd
+			`,
+			want: EbooksNewsPaper,
+		},
+		{
+			name: "fiction #1",
+			input: `
+			genre > fiction asdasd
+			`,
+			want: EbooksNovel,
+		},
+		{
+			name: "fiction #2",
+			input: `
+			genre > roman asdasd
+			`,
+			want: EbooksNovel,
+		},
+		{
+			name: "fiction #3",
+			input: `
+			genre > romance asdasd
+			`,
+			want: EbooksNovel,
+		},
+		{
+			name: "magazine #1",
+			input: `
+			genre > magazine asdasd
+			`,
+			want: EbooksMagazine,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := parseEbookGenre(tt.input)
+			assert.Equal(t, tt.want, got)
+		})
+	}
+}

@@ -549,6 +549,38 @@ func TestParse(t *testing.T) {
 			},
 		},
 		{
+			desc: "ebook release, detect section with nfo genre",
+			root: "Merzmensch.-.KI-Kunst.Digitale.Bildkulturen.2023.GERMAN.RETAIL.EPUB.eBook-Group",
+			testFiles: map[string][]byte{
+				"Merzmensch.-.KI-Kunst.Digitale.Bildkulturen.2023.GERMAN.RETAIL.EPUB.eBook-Group/merzmensch.-.ki-kunst.digitale.bildkulturen.2023.german.retail.epub.ebook-group.epub": []byte("this is a ebook\n"),
+				"Merzmensch.-.KI-Kunst.Digitale.Bildkulturen.2023.GERMAN.RETAIL.EPUB.eBook-Group/group.nfo": []byte(`
+				test
+				genre > sachbuch
+				test2
+				`),
+			},
+			expected: release.Info{
+				Name:          "Merzmensch.-.KI-Kunst.Digitale.Bildkulturen.2023.GERMAN.RETAIL.EPUB.eBook-Group",
+				Group:         "Group",
+				Size:          16 + 45,
+				Language:      "german",
+				TagResolution: release.SD,
+				Extensions: map[string]int{
+					".epub": 1,
+					".nfo":  1,
+				},
+				BiggestFile: &dtree.Node{
+					Info: &dtree.FileInfo{
+						Name: "group.nfo",
+						Size: 45,
+					},
+				},
+				ProductTitle: "Merzmensch KI Kunst Digitale Bildkulturen",
+				ProductYear:  2023,
+				Section:      release.EbooksNonFiction,
+			},
+		},
+		{
 			desc: "empty main folder",
 			root: "Empty.1976.German.1080p.BluRay.x264-Group",
 			testFiles: map[string][]byte{

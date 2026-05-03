@@ -51,6 +51,16 @@ var Regexes = struct {
 	Group:       regexp.MustCompile(`(?i)-([a-z0-9]+(_iNT)?)$`),
 }
 
+var NFORegexes = struct {
+	Genre, EbooksNewspaper, EbooksMagazine, EbooksNovel, EbooksNonFiction *regexp.Regexp
+}{
+	Genre:            regexp.MustCompile(`(?i)genre(.+)`),
+	EbooksNewspaper:  regexp.MustCompile(`(?i)(newspaper|zeitung)`),
+	EbooksMagazine:   regexp.MustCompile(`(?i)(magazine)`),
+	EbooksNovel:      regexp.MustCompile(`(?i)(fiction|romance|roman)`),
+	EbooksNonFiction: regexp.MustCompile(`(?i)(sachbuch|non.?fiction|sprachen)`),
+}
+
 var (
 	// mediaInfoSections contains the sections for which mediainfo will be generated.
 	mediaInfoSections = []Section{TV, TVPack, Movies, AudioVideo, Sport, AudioBooks, AudioFLAC, AudioMP3}
@@ -453,6 +463,13 @@ func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 		}
 	}
 
+	// try to detect ebook type
+	if info.Section == Ebooks && info.NFO != nil {
+		if m := NFORegexes.Genre.FindSubmatch(info.NFO.Content); m != nil {
+			info.Section = parseEbookGenre(string(m[1]))
+		}
+	}
+
 	s.log().Debug("parsed release", "name", info.Name, "section", info.Section)
 
 	if len(info.ForbiddenFiles) > 0 {
@@ -460,6 +477,21 @@ func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 	}
 
 	return info, nil
+}
+
+func parseEbookGenre(genreType string) Section {
+	switch {
+	case NFORegexes.EbooksNonFiction.MatchString(genreType):
+		return EbooksNonFiction
+	case NFORegexes.EbooksNovel.MatchString(genreType):
+		return EbooksNovel
+	case NFORegexes.EbooksNewspaper.MatchString(genreType):
+		return EbooksNewsPaper
+	case NFORegexes.EbooksMagazine.MatchString(genreType):
+		return EbooksMagazine
+	default:
+		return Ebooks
+	}
 }
 
 // tryGenerateMediaInfo attempts to generate MediaInfo for the provided context and logs relevant actions or errors.

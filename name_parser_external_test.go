@@ -134,15 +134,14 @@ func TestParseSection(t *testing.T) {
 		{"Sport - Boxing", "Boxing.2023.05.20.Taylor.vs.Cameron.1080p.HDTV.x264-VERUM", "", release.Sport},
 
 		// E-Books
-		{"Ebook - Magazine", "Tichys.Einblick.No.08.2022.GERMAN.HYBRID.MAGAZINE.eBook-LORENZ", "", release.Ebooks},
+		{"Ebook - Magazine", "Tichys.Einblick.No.08.2022.GERMAN.HYBRID.MAGAZINE.eBook-LORENZ", "", release.EbooksMagazine},
 		{"Ebook - Book Series", "Jeny.Han.Sommer.Band.1-3.2011-2012.German.Retail.EPUB.eBook", "", release.Ebooks},
 		{"Ebook - Novel", "Stephen.King.The.Institute.2019.Retail.ePub-BEAN", "", release.Ebooks},
 		{"Ebook - PDF Format", "Computer.Architecture.6th.Edition.2022.PDF-CUSTODES", "", release.Ebooks},
 		{"Ebook - Technical Manual", "Microsoft.Azure.Administrator.Study.Guide.2023.EPUB-LEARNING", "", release.Ebooks},
 		{"Ebook - Encyclopedia", "Encyclopedia.Britannica.2022.Edition.EPUB-KNOWLEDGE", "", release.Ebooks},
-		{"Ebook - Comic", "Amazing.Spider-Man.Volume.1.Issues.1-10.CBR-COMICS", "", release.Ebooks},
-		{"Ebook - Manga", "Attack.On.Titan.Volume.1-5.2013.EPUB-MANGA", "", release.Ebooks},
-		{"Ebook - EPub", "Carlo.Masala.Wenn.Russland.gewinnt.2025.German.Retail.EPUB.eBook-SPACK", "", release.Ebooks},
+		{"Ebook - Comic", "TOKYOPOP.-.Wise.Man.s.Grandchild.Band.01.2023.German.Retail.Comic.eBook-BitBook", "", release.EbooksComic},
+		{"Ebook - Newspaper", "BZ.Berner.Zeitung.Stadt.plus.Region.Bern.31.03.2018.GERMAN.RETAIL.eBook-LORENZ", "", release.EbooksNewsPaper},
 
 		// Mobile
 		{"Mobile - Android App", "Sygic.GPS.Navigation.v22.0.6.ANDROiD.CELEBRATiON-rGPDA", "", release.Mobile},
