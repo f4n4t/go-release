@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os/exec"
 	"path/filepath"
 	"regexp"
@@ -273,21 +274,21 @@ func (m *MediaInfo) GetNearestResolution() Resolution {
 	}
 
 	standardResolutions := []resolutionDimension{
-		{SD, 640, 480},  // VGA
-		{SD, 854, 480},  // FWVGA
-		{SD, 720, 576},  // Standard Definition (PAL)
-		{SD, 720, 480},  // Standard Definition (NTSC)
-		{SD, 960, 540},  // qHD
-		{HD, 960, 720},  // HD720
-		{HD, 1280, 720}, // HD (720p)
-		{HD, 1280, 800}, // WXGA
-		{HD, 1366, 768}, // WXGA (Widescreen Extended Graphics Array)
-		{HD, 1152, 720}, // Proportional widescreen 720p
-		{HD, 1280, 768}, // WXGA (16:9 aspect ratio)
+		{SD, 640, 480}, // VGA
+		// {SD, 854, 480},  // FWVGA
+		// {SD, 720, 576},  // Standard Definition (PAL)
+		// {SD, 720, 480},  // Standard Definition (NTSC)
+		{SD, 960, 540}, // qHD
+		{HD, 960, 720}, // HD720
+		// {HD, 1280, 720}, // HD (720p)
+		// {HD, 1280, 800}, // WXGA
+		// {HD, 1366, 768}, // WXGA (Widescreen Extended Graphics Array)
+		// {HD, 1152, 720}, // Proportional widescreen 720p
+		// {HD, 1280, 768}, // WXGA (16:9 aspect ratio)
 		{HD, 1280, 800}, // WXGA (16:10 aspect ratio)
 		{FHD, 1440, 900},
-		{FHD, 1440, 1080}, // Anamorphic Full HD
-		{FHD, 1600, 900},  // HD+
+		// {FHD, 1440, 1080}, // Anamorphic Full HD
+		// {FHD, 1600, 900},  // HD+
 		{FHD, 1920, 1080}, // Full HD (1080p)
 		{UHD, 3840, 2160}, // Ultra HD (4K)
 	}
@@ -322,12 +323,12 @@ func (m *MediaInfo) GetNearestResolution() Resolution {
 
 	var (
 		closestResolution Resolution
-		minDistance       = float64(1<<31 - 1) // set big minDistance
+		minDistance       = math.MaxInt // set big minDistance
 	)
 
 	for _, std := range standardResolutions {
-		widthDiff := float64(width - std.width)
-		heightDiff := float64(height - std.height)
+		widthDiff := width - std.width
+		heightDiff := height - std.height
 		distance := (widthDiff * widthDiff) + (heightDiff * heightDiff)
 
 		if distance < minDistance {
