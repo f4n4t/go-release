@@ -73,6 +73,10 @@ func (s *Service) CheckZip(rel *Info, extractNFO bool) error {
 			return err
 		}
 
+		if len(nfoFile.Content) == 0 {
+			nfoFile = result.nfoFile
+		}
+
 		s.log().Info("zip check complete", "folder", dir)
 	}
 

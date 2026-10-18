@@ -1,6 +1,8 @@
 package release
 
 import (
+	"context"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -163,6 +165,25 @@ func TestService_checkFileExtension(t *testing.T) {
 						Error:    ErrForbiddenExtension,
 					},
 				},
+			},
+		},
+		{
+			desc:     "forbidden extension (uppercase)",
+			testFile: testFile{"release/test.NZB", []byte("blub")},
+			expectedInfo: &Info{
+				ForbiddenFiles: []ForbiddenFile{
+					{
+						FullPath: "release/test.NZB",
+						Error:    ErrForbiddenExtension,
+					},
+				},
+			},
+		},
+		{
+			desc:     "sfv file (uppercase)",
+			testFile: testFile{"release/test.SFV", []byte("blub")},
+			expectedInfo: &Info{
+				SfvCount: 1,
 			},
 		},
 		{
@@ -715,4 +736,19 @@ func TestParseEbookGenre(t *testing.T) {
 			assert.Equal(t, tt.want, got)
 		})
 	}
+}
+
+func TestParse_SingleFileEpisodeRange(t *testing.T) {
+	// a single file with an episode range must not panic when searching for pre information in sub folders
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+
+	testService := NewServiceBuilder().WithSkipMediaInfo(true).WithContext(ctx).Build()
+
+	testFile := filepath.Join(t.TempDir(), "Not.Existing.Show.S01E01-E02.German.1080p.WEB.x264-NOGRP.mkv")
+	require.NoError(t, os.WriteFile(testFile, []byte("content"), 0o644))
+
+	info, err := testService.Parse(testFile)
+	require.NoError(t, err)
+	assert.Len(t, info.Episodes, 2)
 }

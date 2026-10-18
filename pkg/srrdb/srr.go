@@ -59,10 +59,19 @@ func (f *SrrFile) Unmarshal(b []byte) (err error) {
 		m := make(map[string]any)
 		m["srr_header_offset"] = offset
 
+		if len(b)-offset < 7 {
+			// not enough bytes left for a header
+			return ErrBadFile
+		}
+
 		header := &RarHeader{}
 		err := header.Parse(b[offset : offset+7])
 		if err != nil {
 			return err
+		}
+		if header.Size < 7 {
+			// a header is at least 7 bytes, smaller sizes would never advance the offset
+			return ErrBadBlock
 		}
 		m["srr_header_type"] = fmt.Sprintf("%x", header.Type)
 		m["srr_header_flags"] = fmt.Sprintf("%x", header.Flags)
@@ -334,32 +343,19 @@ func (f *SrrFile) Unmarshal(b []byte) (err error) {
 	return nil
 }
 
+var rarRootNameRegexes = []*regexp.Regexp{
+	regexp.MustCompile(`^(?P<Base>.*)(\.[rstu][0-9]{2})$`),
+	regexp.MustCompile(`^(?P<Base>.*)(\.[0-9]{3})$`),
+	regexp.MustCompile(`^(?P<Base>.*)(\.part[0-9]+\.rar)$`),
+	regexp.MustCompile(`^(?P<Base>.*)([0-9]{2,3}\.rar)$`),
+	regexp.MustCompile(`^(?P<Base>.*)(\.rar)$`),
+}
+
 func RarRootName(path string) string {
-	var re *regexp.Regexp
-	reOld := regexp.MustCompile(`^(?P<Base>.*)(\\.[rstu]{1}[0-9]{2})$`)
-	re = reOld
-	if re.MatchString(path) {
-		return strings.ToLower(re.ReplaceAllString(path, "${Base}"))
-	}
-	reOld2 := regexp.MustCompile(`^(?P<Base>.*)(\\.[0-9]{3})$`)
-	re = reOld2
-	if re.MatchString(path) {
-		return strings.ToLower(re.ReplaceAllString(path, "${Base}"))
-	}
-	reNew := regexp.MustCompile(`^(?P<Base>.*)(\\.part[0-9]+\\.rar)$`)
-	re = reNew
-	if re.MatchString(path) {
-		return strings.ToLower(re.ReplaceAllString(path, "${Base}"))
-	}
-	reOld3 := regexp.MustCompile(`^(?P<Base>.*)([0-9]{2,3}.rar)$`)
-	re = reOld3
-	if re.MatchString(path) {
-		return strings.ToLower(re.ReplaceAllString(path, "${Base}"))
-	}
-	reOldInit := regexp.MustCompile(`^(?P<Base>.*)(\\.rar)$`)
-	re = reOldInit
-	if re.MatchString(path) {
-		return strings.ToLower(re.ReplaceAllString(path, "${Base}"))
+	for _, re := range rarRootNameRegexes {
+		if re.MatchString(path) {
+			return strings.ToLower(re.ReplaceAllString(path, "${Base}"))
+		}
 	}
 	return ""
 }

@@ -135,7 +135,7 @@ func GetCRC32Parallel(ctx context.Context, filePath string, hashThreads int, wri
 		chunkSize      = int64(1024 * 1024 * 10) // 10MB
 		totalChunks    = (fileSize + int64(chunkSize) - 1) / int64(chunkSize)
 		resultChan     = make(chan chunk, numWorkers)
-		jobChan        = make(chan func() chunk, numWorkers)
+		jobChan        = make(chan func() (chunk, error), numWorkers)
 		errChan        = make(chan error)
 		chunkList      = make([]fileChunk, totalChunks)
 		chunkIdx       = 0
@@ -160,6 +160,10 @@ func GetCRC32Parallel(ctx context.Context, filePath string, hashThreads int, wri
 		fileRemaining -= toAllocate
 	}
 
+	// cancel all workers and the job producer when we return early (error or canceled context)
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+
 	for range numWorkers {
 		go func() {
 			for {
@@ -171,7 +175,21 @@ func GetCRC32Parallel(ctx context.Context, filePath string, hashThreads int, wri
 					if !ok {
 						return
 					}
-					resultChan <- job()
+
+					result, err := job()
+					if err != nil {
+						select {
+						case errChan <- err:
+						case <-ctx.Done():
+						}
+						return
+					}
+
+					select {
+					case resultChan <- result:
+					case <-ctx.Done():
+						return
+					}
 				}
 			}
 		}()
@@ -181,40 +199,42 @@ func GetCRC32Parallel(ctx context.Context, filePath string, hashThreads int, wri
 		defer close(jobChan)
 
 		for chunkIdx, c := range chunkList {
-			jobChan <- func() chunk {
+			job := func() (chunk, error) {
 				hasher := hashPool.Get().(hash.Hash32)
 				defer hashPool.Put(hasher)
 				hasher.Reset()
 
 				f, err := os.Open(filePath)
 				if err != nil {
-					errChan <- err
-					return chunk{}
+					return chunk{}, err
 				}
 				defer f.Close()
 
 				if _, err := f.Seek(c.startPos, io.SeekStart); err != nil {
-					errChan <- err
-					return chunk{}
+					return chunk{}, err
 				}
 
 				writer := io.MultiWriter(append([]io.Writer{hasher}, writers...)...)
 
-				written, err := io.Copy(writer, io.LimitReader(f, c.chunkLength))
+				written, err := io.Copy(writer, io.LimitReader(NewReader(ctx, f), c.chunkLength))
 				switch {
 				case err != nil:
-					errChan <- fmt.Errorf("%s: copy: %w", filePath, err)
-					return chunk{}
+					return chunk{}, fmt.Errorf("%s: copy: %w", filePath, err)
 
 				case written != c.chunkLength:
 					// should never happen
-					errChan <- fmt.Errorf("incomplete read: expected %d bytes, got %d", c.chunkLength, written)
-					return chunk{}
+					return chunk{}, fmt.Errorf("incomplete read: expected %d bytes, got %d", c.chunkLength, written)
 				}
 
 				crc := hasher.Sum32()
 
-				return chunk{idx: chunkIdx, crc: crc, len: written}
+				return chunk{idx: chunkIdx, crc: crc, len: written}, nil
+			}
+
+			select {
+			case jobChan <- job:
+			case <-ctx.Done():
+				return
 			}
 		}
 	}()
