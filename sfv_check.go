@@ -137,6 +137,7 @@ func getFilesFromSFV(sfvPath string) (sfvFiles, error) {
 	if err != nil {
 		return nil, fmt.Errorf("open sfv file: %w", err)
 	}
+	defer sfvFile.Close()
 
 	var files sfvFiles
 	sfvDir := filepath.Dir(sfvPath)

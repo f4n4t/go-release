@@ -149,3 +149,41 @@ func TestService_GetFile(t *testing.T) {
 		})
 	}
 }
+
+func TestSrrFile_UnmarshalInvalid(t *testing.T) {
+	tests := []struct {
+		name string
+		data []byte
+	}{
+		{"truncated header", []byte{0x69, 0x69, 0x69, 0x00, 0x00, 0x07, 0x00, 0x01}},
+		{"zero size header", []byte{0x00, 0x00, 0x75, 0x00, 0x00, 0x00, 0x00}},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var srr srrdb.SrrFile
+			assert.Error(t, srr.Unmarshal(tt.data))
+		})
+	}
+}
+
+func TestRarRootName(t *testing.T) {
+	tests := []struct {
+		path string
+		want string
+	}{
+		{"Foo.Bar.part01.rar", "foo.bar"},
+		{"foo.r00", "foo"},
+		{"foo.s12", "foo"},
+		{"foo.001", "foo"},
+		{"foo01.rar", "foo"},
+		{"foo.rar", "foo"},
+		{"foo.mkv", ""},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.path, func(t *testing.T) {
+			assert.Equal(t, tt.want, srrdb.RarRootName(tt.path))
+		})
+	}
+}

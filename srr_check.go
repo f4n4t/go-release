@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strconv"
 	"time"
 
@@ -29,13 +30,7 @@ func (s *Service) CheckSRR(rel *Info, showProgress bool, fastCheck bool) error {
 		return err
 	}
 
-	var releases []string
-
-	for _, f := range rel.MediaFiles {
-		releases = append(releases, f.Parent.Info.Name)
-	}
-
-	srrdbReleases, err := s.fetchSRRInformation(releases)
+	srrdbReleases, err := s.fetchSRRInformation(srrReleaseNames(rel))
 	if err != nil {
 		return err
 	}
@@ -61,6 +56,25 @@ func (s *Service) CheckSRR(rel *Info, showProgress bool, fastCheck bool) error {
 	s.log().Info("checked srr", "dur", time.Since(startTime).String())
 
 	return nil
+}
+
+// srrReleaseNames returns the unique release names to look up on srrdb, derived from the media files' parent folders.
+// For single file releases, the release name itself is used.
+func srrReleaseNames(rel *Info) []string {
+	var releases []string
+
+	for _, f := range rel.MediaFiles {
+		name := rel.Name
+		if f.Parent != nil {
+			name = f.Parent.Info.Name
+		}
+
+		if !slices.Contains(releases, name) {
+			releases = append(releases, name)
+		}
+	}
+
+	return releases
 }
 
 // fetchSRRInformation retrieves SRR information for a list of release names from the SRR database.

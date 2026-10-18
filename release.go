@@ -357,7 +357,9 @@ func (s *Service) isForbidden(fi *dtree.FileInfo) bool {
 	if len(s.forbiddenExtensions) == 0 {
 		return false
 	}
-	return slices.Contains(s.forbiddenExtensions, fi.Extension)
+	return slices.ContainsFunc(s.forbiddenExtensions, func(ext string) bool {
+		return strings.EqualFold(ext, fi.Extension)
+	})
 }
 
 // Episode represents a single episode in a series.
@@ -424,7 +426,7 @@ func (s *Service) Parse(root string, ignore ...string) (*Info, error) {
 	if info.Section == TVPack || info.Section == TV {
 		info.Episodes = getEpisodes(info.MediaFiles, info.Root)
 
-		if !s.skipPre && info.PreInfo == nil && len(info.Episodes) > 1 {
+		if !s.skipPre && info.PreInfo == nil && len(info.Episodes) > 1 && len(info.Root.Children) > 0 {
 			firstChild := info.Root.Children[0]
 			if firstChild.Info.IsDir {
 				s.log().Debug("trying to search for pre information with sub folder name", "name", firstChild.Info.Name)
@@ -761,15 +763,17 @@ const maxNFOSize int64 = 10 * 1024 * 1024 // 10MB
 // checkFileExtension processes files based on their extension and updates the context.
 // For .nfo files, only the first one is stored, but later ones are still checked for missing IMDB IDs.
 func (s *Service) checkFileExtension(info *Info, node *dtree.Node) error {
+	ext := strings.ToLower(node.Info.Extension)
+
 	switch {
 	case s.isForbidden(node.Info):
 		info.ForbiddenFiles.addFile(node.FullPath, node.Info, ErrForbiddenExtension)
 		s.log().Error("check file extension", "error", ErrForbiddenExtension, "name", node.Info.Name)
 
-	case node.Info.Extension == ".sfv":
+	case ext == ".sfv":
 		info.SfvCount++
 
-	case node.Info.Extension == ".nfo":
+	case ext == ".nfo":
 		if node.Info.Size == 0 || (info.ImdbID > 0 && info.NFO != nil) {
 			break
 		} else if node.Info.Size > maxNFOSize {

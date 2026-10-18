@@ -167,3 +167,41 @@ func TestRelease_VerifySingleSRR(t *testing.T) {
 		assert.ErrorIs(t, gotErr, context.Canceled)
 	})
 }
+
+func TestSrrReleaseNames(t *testing.T) {
+	root := &dtree.Node{FullPath: "/rel", Info: &dtree.FileInfo{Name: "Test.Release", IsDir: true}}
+	sub := &dtree.Node{FullPath: "/rel/CD1", Info: &dtree.FileInfo{Name: "CD1", IsDir: true}, Parent: root}
+
+	tests := []struct {
+		name string
+		rel  *Info
+		want []string
+	}{
+		{
+			name: "single file release without parent",
+			rel: &Info{
+				Name:       "Single.File.Release",
+				MediaFiles: MediaFiles{{FullPath: "/Single.File.Release.mkv", Info: &dtree.FileInfo{Name: "Single.File.Release.mkv"}}},
+			},
+			want: []string{"Single.File.Release"},
+		},
+		{
+			name: "duplicate parents are only returned once",
+			rel: &Info{
+				Name: "Test.Release",
+				MediaFiles: MediaFiles{
+					{FullPath: "/rel/a.mkv", Info: &dtree.FileInfo{Name: "a.mkv"}, Parent: root},
+					{FullPath: "/rel/b.mkv", Info: &dtree.FileInfo{Name: "b.mkv"}, Parent: root},
+					{FullPath: "/rel/CD1/c.mkv", Info: &dtree.FileInfo{Name: "c.mkv"}, Parent: sub},
+				},
+			},
+			want: []string{"Test.Release", "CD1"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.want, srrReleaseNames(tt.rel))
+		})
+	}
+}
